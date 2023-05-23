@@ -25,9 +25,6 @@ min_line = None
 max_line = None
 # Define item variables
 num_items = None
-num_reds = None
-num_greens = None
-num_neutrals = None
 item_size = None
 item_time = None
 
@@ -45,12 +42,9 @@ def set_args(arg_file=None):
     arg_parser.add_argument("--max_gap", type=int, default=15)
     arg_parser.add_argument("--min_line", type=int, default=15)
     arg_parser.add_argument("--max_line", type=int, default=200)
-    arg_parser.add_argument("--num_items", type=int, default=6)
-    arg_parser.add_argument("--num_greens", type=int, default=3)
-    arg_parser.add_argument("--num_reds", type=int, default=3)
-    arg_parser.add_argument("--num_neutrals", type=int, default=3)
+    arg_parser.add_argument("--num_items", type=int, default=4)
     arg_parser.add_argument("--item_size", type=int, default=10)
-    arg_parser.add_argument("--item_time", type=int, default=100)
+    arg_parser.add_argument("--item_time", type=int, default=50)
 
     args = arg_parser.parse_args()
 
@@ -71,9 +65,6 @@ def set_args(arg_file=None):
     global min_line
     global max_line
     global num_items
-    global num_greens
-    global num_reds
-    global num_neutrals
     global item_size
     global item_time
 
@@ -93,9 +84,6 @@ def set_args(arg_file=None):
     max_gap = args.max_gap
     min_line = args.min_line
     max_line = args.max_line
-    num_items = args.num_greens + args.num_reds + args.num_neutrals
-    num_greens = args.num_greens
-    num_reds = args.num_reds
-    num_neutrals = args.num_neutrals
+    num_items = args.num_items
     item_size = args.item_size
     item_time = args.item_time

@@ -2,7 +2,7 @@ import pygame
 import math
 from decimal import *
 import config as cfg
-from items import item_collision
+from items import check_for_item_collision
 from subfunctions import (
     get_random_position,
     get_random_gap,
@@ -35,6 +35,15 @@ def move_player(player, player_key):
         player["pos"] = (x, y)
         player["pos_history"].insert(0, (x, y))
 
+        # update item timers
+        # if len(player["items"]) != 0:
+        for item, item_timer in zip(player["items"], player["item_timer"]):
+            if item_timer <= 0:
+                player["item"].pop(item)
+                player["item_timer"].pop(item_timer)
+            else:
+                item_timer -= 1
+
         # update timers
         if player["gap"] == False:
             player["line_timer"] -= 1
@@ -52,13 +61,14 @@ def move_player(player, player_key):
     return player
 
 
-def move_players(players, player_keys):
+def move_players(players, player_keys, items):
     for player, player_key in zip(players, player_keys):
         if player["alive"]:
             if player["dir"] == "stop":
                 continue
             else:
                 check_for_collisions(players)
+                check_for_item_collision(players, items)
                 # item_collision(player, items)
                 move_player(player, player_key)
 
@@ -92,6 +102,8 @@ def init_players(num_players):
             "gap_history": [gap],
             "gap_timer": start_gap,
             "line_timer": start_line,
+            "items": [],
+            "item_timer": [],
         }
         players.append(player)
     return players

@@ -13,6 +13,7 @@ def reset_game(players, screen, win_counts):
         player["alive"] = True
         start_pos, start_dir = get_random_position()
         start_gap, start_line = get_random_gap()
+        player["speed"] = cfg.speed
         player["pos"] = start_pos
         player["dir"] = start_dir
         player["gap_timer"] = start_gap
@@ -20,13 +21,12 @@ def reset_game(players, screen, win_counts):
         player["pos_history"] = [start_pos]
         player["gap"] = gap
         player["gap_history"] = [gap]
-
-    # for item in items:
-    #     item["alive"] = False
-    #     item["timer"] = 0
+        player["items"] = []
+        player["item_timer"] = []
 
     # Reset winner
     winner = None
+    items = []
 
     # Refresh the screen
     draw_screen(screen, win_counts)
@@ -35,14 +35,15 @@ def reset_game(players, screen, win_counts):
     # Pause briefly to give players time to reposition
     pygame.time.wait(1000)
 
-    return winner
+    return winner, items
 
 
-def game_loop(players, player_keys, num_players, screen, win_counts):
+def game_loop(players, player_keys, num_players, screen, win_counts, last_spawn_time):
     # set up game variables
     game_over = False
     running = True
     winner = None
+    items = []
 
     while running:
         for event in pygame.event.get():
@@ -50,14 +51,23 @@ def game_loop(players, player_keys, num_players, screen, win_counts):
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and game_over:
-                    winner = reset_game(players, screen, win_counts)
+                    winner, items = reset_game(players, screen, win_counts)
                     game_over = False
                 elif event.key == pygame.K_ESCAPE and game_over:
                     running = False
 
+        # Get current time in milliseconds
+        current_time = pygame.time.get_ticks()
+
+        # Check if it's time to spawn a new item (every 10 seconds)
+        if current_time - last_spawn_time >= 3000:
+            items = render_items(screen, items)
+
+            # Update the last spawn time
+            last_spawn_time = current_time
+
         # move all players and check for collisions
-        move_players(players, player_keys)
-        # render_items(screen, items)
+        move_players(players, player_keys, items)
 
         # check if any players are alive
         alive_players = [player for player in players if player["alive"]]
@@ -107,7 +117,7 @@ def game_loop(players, player_keys, num_players, screen, win_counts):
                     running = False
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
-                        winner = reset_game(players, num_players, win_counts)
+                        winner, items = reset_game(players, num_players, win_counts)
                     elif event.key == pygame.K_ESCAPE:
                         running = False
 
