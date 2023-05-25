@@ -60,7 +60,7 @@ def game_loop(players, player_keys, num_players, screen, win_counts, last_spawn_
         current_time = pygame.time.get_ticks()
 
         # Check if it's time to spawn a new item (every 10 seconds)
-        if current_time - last_spawn_time >= 3000:
+        if current_time - last_spawn_time >= 1000:
             items = render_items(screen, items)
 
             # Update the last spawn time

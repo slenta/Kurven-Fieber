@@ -2,7 +2,7 @@ import pygame
 import math
 from decimal import *
 import config as cfg
-from items import check_for_item_collision
+from items import check_for_item_collision, power_down
 from subfunctions import (
     get_random_position,
     get_random_gap,
@@ -11,7 +11,7 @@ from subfunctions import (
 )
 
 
-def move_player(player, player_key):
+def move_player(player, player_key, players):
     # check if player is alive
     if player["alive"]:
         # Get gap and line timer
@@ -28,21 +28,23 @@ def move_player(player, player_key):
         dx, dy = player["dir"]
 
         # move player
-        x += math.floor(dx * player["speed"] * 100) / 100
-        y += math.floor(dy * player["speed"] * 100) / 100
+        # x += math.floor(dx * player["speed"] * 100) / 100
+        # y += math.floor(dy * player["speed"] * 100) / 100
+        x += dx * player["speed"]
+        y += dy * player["speed"]
 
         # update player position and position history
         player["pos"] = (x, y)
         player["pos_history"].insert(0, (x, y))
 
         # update item timers
-        # if len(player["items"]) != 0:
-        for item, item_timer in zip(player["items"], player["item_timer"]):
-            if item_timer <= 0:
-                player["item"].pop(item)
-                player["item_timer"].pop(item_timer)
+        for i in range(len(player["items"])):
+            print(len(player["items"]), len(player["item_timer"]), i)
+            if player["item_timer"][i] <= 0:
+                player = power_down(player["items"][i], player["item_timer"][i], player)
+                break
             else:
-                item_timer -= 1
+                player["item_timer"][i] -= 1
 
         # update timers
         if player["gap"] == False:
@@ -70,7 +72,7 @@ def move_players(players, player_keys, items):
                 check_for_collisions(players)
                 check_for_item_collision(players, items)
                 # item_collision(player, items)
-                move_player(player, player_key)
+                move_player(player, player_key, players)
 
 
 def init_players(num_players):

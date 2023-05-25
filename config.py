@@ -44,7 +44,7 @@ def set_args(arg_file=None):
     arg_parser.add_argument("--max_line", type=int, default=200)
     arg_parser.add_argument("--num_items", type=int, default=4)
     arg_parser.add_argument("--item_size", type=int, default=10)
-    arg_parser.add_argument("--item_time", type=int, default=50)
+    arg_parser.add_argument("--item_time", type=int, default=200)
 
     args = arg_parser.parse_args()
 

@@ -30,7 +30,7 @@ def do_positions_intersect(pos1, pos2, pos_history2):
     return False
 
 
-def do_points_intersect(point1, point2, radius=5):
+def do_points_intersect(point1, point2, radius=2):
     distance = math.sqrt((point2[0] - point1[0]) ** 2 + (point2[1] - point1[1]) ** 2)
     return distance < radius
 
@@ -75,7 +75,7 @@ def check_for_collisions(players):
         player_size = player["size"]
 
         # check collision with own line
-        for pos, gap in zip(player_history[10:], gap_history[10:]):
+        for pos, gap in zip(player_history[20:], gap_history[20:]):
             if not gap:
                 intersect = do_points_intersect(pos, player_pos)
                 if intersect:

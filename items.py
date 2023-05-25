@@ -16,8 +16,14 @@ class item_class:
             self.color = cfg.green
         elif 1 < self.id <= 3:
             self.color = cfg.red
-        self.position, self.dir = get_random_position()
+        self.position = self.get_position()
         self.item = self.init_item()
+
+    def get_position(self):
+        x = random.randint(20, cfg.screen_width - cfg.score_section_width - 20)
+        y = random.randint(20, cfg.screen_height - 20)
+        position = (x, y)
+        return position
 
     # First determine which speed item is rendered
     def random_id(self):
@@ -54,40 +60,51 @@ def power_up(item, player, players):
                 play["items"].append(item)
                 play["item_timer"].append(cfg.item_time)
                 if id == 0:
-                    play["speed"] -= 1
+                    play["speed"] *= 2 / 3
                 elif id == 1:
-                    play["speed"] += 1
+                    play["speed"] *= 3 / 2
         elif 1 < id <= 3:
             if play["id"] is not player["id"]:
                 play["items"].append(item)
                 play["item_timer"].append(cfg.item_time)
                 if id == 2:
-                    play["speed"] -= 1
+                    play["speed"] *= 2 / 3
                 elif id == 3:
-                    play["speed"] += 1
+                    play["speed"] *= 3 / 2
     return players
 
 
-def power_down(item, player, players):
+def power_down(item, item_timer, player):
     id = item["id"]
-    for play in players:
-        if id <= 1:
-            if play["id"] == player["id"]:
-                play["items"].pop(0)
-                play["item_timer"].pop(0)
-                if id == 0:
-                    play["speed"] += 1
-                elif id == 1:
-                    play["speed"] -= 1
-        elif 1 < id <= 3:
-            if play["id"] is not player["id"]:
-                play["items"].pop(0)
-                play["item_timer"].pop(0)
-                if id == 2:
-                    play["speed"] += 1
-                elif id == 3:
-                    play["speed"] -= 1
-    return players
+    player["items"].remove(item)
+    player["item_timer"].remove(item_timer)
+    if id == 1 or id == 3:
+        player["speed"] *= 2 / 3
+    elif id == 0 or id == 2:
+        player["speed"] *= 3 / 2
+    return player
+
+
+# def power_down(item, player, players):
+#     id = item["id"]
+#     for play in players:
+#         if id <= 1:
+#             if play["id"] == player["id"]:
+#                 play["items"].pop(0)
+#                 play["item_timer"].pop(0)
+#                 if id == 0:
+#                     play["speed"] *= 3/2
+#                 elif id == 1:
+#                     play["speed"] *= 2 / 3
+#         elif 1 < id <= 3:
+#             if play["id"] is not player["id"]:
+#                 play["items"].pop(0)
+#                 play["item_timer"].pop(0)
+#                 if id == 2:
+#                     play["speed"] *= 3/2
+#                 elif id == 3:
+#                     play["speed"] *= 2 / 3
+#     return players
 
 
 # Function to render items
