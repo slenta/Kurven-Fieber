@@ -12,7 +12,7 @@ pygame.init()
 num_players, player_keys = show_menu_screen()
 
 # Initialize players and items
-players = init_players(num_players)
+players = init_players(num_players, player_keys)
 last_spawn_time = pygame.time.get_ticks()
 
 # Initialize win counts dictionary
@@ -23,4 +23,4 @@ screen = pygame.display.set_mode((cfg.screen_width, cfg.screen_height))
 draw_screen(screen, win_counts, screen_color=cfg.black, outline_color=cfg.white)
 
 # Call game loop
-game_loop(players, player_keys, num_players, screen, win_counts, last_spawn_time)
+game_loop(players, num_players, player_keys, screen, win_counts, last_spawn_time)

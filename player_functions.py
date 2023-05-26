@@ -11,7 +11,7 @@ from subfunctions import (
 )
 
 
-def move_player(player, player_key, players):
+def move_player(player):
     # check if player is alive
     if player["alive"]:
         # Get gap and line timer
@@ -23,19 +23,13 @@ def move_player(player, player_key, players):
             player["gap"] = True
 
         # update player direction and get player values
-        player = update_player_direction(player, player_key)
+        player = update_player_direction(player)
         x, y = player["pos"]
         dx, dy = player["dir"]
 
         # move player
-        # x += math.floor(dx * player["speed"] * 100) / 100
-        # y += math.floor(dy * player["speed"] * 100) / 100
         x += dx * player["speed"]
         y += dy * player["speed"]
-
-        # update player position and position history
-        player["pos"] = (x, y)
-        player["pos_history"].insert(0, (x, y))
 
         # update item timers
         for i in range(len(player["items"])):
@@ -57,25 +51,29 @@ def move_player(player, player_key, players):
             player["gap"] = False
             player["gap_timer"], player["line_timer"] = get_random_gap()
 
+        # Update player position
+        player["pos"] = (x, y)
         # Update gap history
         player["gap_history"].insert(0, player["gap"])
+        # update position history
+        player["pos_history"].insert(0, (x, y))
 
     return player
 
 
-def move_players(players, player_keys, items):
-    for player, player_key in zip(players, player_keys):
+def move_players(players, items):
+    for player in players:
         if player["alive"]:
             if player["dir"] == "stop":
                 continue
             else:
-                check_for_collisions(players)
-                check_for_item_collision(players, items)
+                players = check_for_collisions(players)
+                players, items = check_for_item_collision(players, items)
                 # item_collision(player, items)
-                move_player(player, player_key, players)
+                player = move_player(player)
 
 
-def init_players(num_players):
+def init_players(num_players, player_keys):
     player_colors = [
         (255, 0, 0),
         (0, 255, 0),
@@ -86,6 +84,7 @@ def init_players(num_players):
     ]
     players = []
     for i in range(num_players):
+        player_key = player_keys[i]
         start_pos, start_dir = get_random_position()
         start_gap, start_line = get_random_gap()
         gap = False
@@ -104,8 +103,11 @@ def init_players(num_players):
             "gap_history": [gap],
             "gap_timer": start_gap,
             "line_timer": start_line,
+            "del_angle": 5,
             "items": [],
             "item_timer": [],
+            "left": player_key["left"],
+            "right": player_key["right"],
         }
         players.append(player)
     return players

@@ -75,7 +75,7 @@ def check_for_collisions(players):
         player_size = player["size"]
 
         # check collision with own line
-        for pos, gap in zip(player_history[20:], gap_history[20:]):
+        for pos, gap in zip(player_history[5:], gap_history[5:]):
             if not gap:
                 intersect = do_points_intersect(pos, player_pos)
                 if intersect:
@@ -105,16 +105,18 @@ def check_for_collisions(players):
             player["alive"] = False
             break
 
+    return players
 
-def update_player_direction(player, player_keys):
+
+def update_player_direction(player):
     # update directions
     keys = pygame.key.get_pressed()
     # Handle left key
-    if keys[pygame.key.key_code(player_keys["left"])]:
-        player["angle"] -= 5  # Rotate left by 10 degrees
+    if keys[pygame.key.key_code(player["left"])]:
+        player["angle"] -= player["del_angle"]  # Rotate left by 10 degrees
     # Handle right key
-    elif keys[pygame.key.key_code(player_keys["right"])]:
-        player["angle"] += 5
+    elif keys[pygame.key.key_code(player["right"])]:
+        player["angle"] += player["del_angle"]
 
     # Normalize the angle to keep it within 0-360 degrees range
     if player["angle"] < 0:

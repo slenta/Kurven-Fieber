@@ -2,11 +2,11 @@ import pygame
 from player_functions import get_random_position, get_random_gap
 from player_functions import move_players, get_winner
 from display_functions import display_text, draw_players, display_winner, draw_screen
-from items import render_items
+from items import render_items, power_down
 import config as cfg
 
 
-def reset_game(players, screen, win_counts):
+def reset_game(players, screen, player_keys, win_counts):
     # Set all players to be alive and reset their positions and directions
     gap = False
     for player in players:
@@ -14,11 +14,14 @@ def reset_game(players, screen, win_counts):
         start_pos, start_dir = get_random_position()
         start_gap, start_line = get_random_gap()
         player["speed"] = cfg.speed
+        player["left"] = player_keys[player["id"]]["left"]
+        player["right"] = player_keys[player["id"]]["right"]
         player["pos"] = start_pos
         player["dir"] = start_dir
         player["gap_timer"] = start_gap
         player["line_timer"] = start_line
         player["pos_history"] = [start_pos]
+        player["del_angle"] = 5
         player["gap"] = gap
         player["gap_history"] = [gap]
         player["items"] = []
@@ -38,7 +41,7 @@ def reset_game(players, screen, win_counts):
     return winner, items
 
 
-def game_loop(players, player_keys, num_players, screen, win_counts, last_spawn_time):
+def game_loop(players, num_players, player_keys, screen, win_counts, last_spawn_time):
     # set up game variables
     game_over = False
     running = True
@@ -51,7 +54,7 @@ def game_loop(players, player_keys, num_players, screen, win_counts, last_spawn_
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and game_over:
-                    winner, items = reset_game(players, screen, win_counts)
+                    winner, items = reset_game(players, screen, player_keys, win_counts)
                     game_over = False
                 elif event.key == pygame.K_ESCAPE and game_over:
                     running = False
@@ -67,7 +70,7 @@ def game_loop(players, player_keys, num_players, screen, win_counts, last_spawn_
             last_spawn_time = current_time
 
         # move all players and check for collisions
-        move_players(players, player_keys, items)
+        move_players(players, items)
 
         # check if any players are alive
         alive_players = [player for player in players if player["alive"]]
@@ -117,7 +120,18 @@ def game_loop(players, player_keys, num_players, screen, win_counts, last_spawn_
                     running = False
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
-                        winner, items = reset_game(players, num_players, win_counts)
+                        for player in players:
+                            for i in range(len(player["items"])):
+                                player, player_key = power_down(
+                                    player["items"][i],
+                                    player["item_timer"][i],
+                                    player,
+                                    player_key,
+                                )
+
+                        winner, items = reset_game(
+                            players, num_players, player_keys, win_counts
+                        )
                     elif event.key == pygame.K_ESCAPE:
                         running = False
 

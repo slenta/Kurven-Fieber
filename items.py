@@ -11,10 +11,10 @@ class item_class:
         self.screen_height = cfg.screen_height
         self.radius = cfg.item_size
         self.id = id
-        # item ids: 0: self slower, 1: self faster, 2: others slower, 3: others faster
+        self.item_letter = cfg.item_letters[self.id]
         if self.id <= 1:
             self.color = cfg.green
-        elif 1 < self.id <= 3:
+        elif 1 < self.id <= 5:
             self.color = cfg.red
         self.position = self.get_position()
         self.item = self.init_item()
@@ -44,6 +44,11 @@ class item_class:
     # Function to render the intem
     def render(self):
         pygame.draw.circle(self.screen, self.color, self.position, self.radius)
+        # Render the letter surface
+        letter_surface = cfg.font.render(self.item_letter, True, cfg.white)
+        letter_rect = letter_surface.get_rect(center=self.position)
+        # Draw the letter inside the item
+        self.screen.blit(letter_surface, letter_rect)
         self.item["alive"] = True
 
     def unrender(self):
@@ -71,6 +76,21 @@ def power_up(item, player, players):
                     play["speed"] *= 2 / 3
                 elif id == 3:
                     play["speed"] *= 3 / 2
+        elif id == 4:
+            if play["id"] is not player["id"]:
+                play["items"].append(item)
+                play["item_timer"].append(cfg.item_time)
+                left = play["left"]
+                right = play["right"]
+                play["left"] = right
+                play["right"] = left
+        elif id == 5:
+            if play["id"] is not player["id"]:
+                play["items"].append(item)
+                play["item_timer"].append(cfg.item_time)
+                play["del_angle"] += 5
+                if play["del_angle"] >= 22:
+                    play["del_angle"] = 22
     return players
 
 
@@ -82,35 +102,22 @@ def power_down(item, item_timer, player):
         player["speed"] *= 2 / 3
     elif id == 0 or id == 2:
         player["speed"] *= 3 / 2
+    elif id == 4:
+        left = player["left"]
+        right = player["right"]
+        player["left"] = right
+        player["right"] = left
+    elif id == 5:
+        player["del_angle"] -= 5
+        if player["del_angle"] <= 2:
+            player["del_angle"] = 2
     return player
-
-
-# def power_down(item, player, players):
-#     id = item["id"]
-#     for play in players:
-#         if id <= 1:
-#             if play["id"] == player["id"]:
-#                 play["items"].pop(0)
-#                 play["item_timer"].pop(0)
-#                 if id == 0:
-#                     play["speed"] *= 3/2
-#                 elif id == 1:
-#                     play["speed"] *= 2 / 3
-#         elif 1 < id <= 3:
-#             if play["id"] is not player["id"]:
-#                 play["items"].pop(0)
-#                 play["item_timer"].pop(0)
-#                 if id == 2:
-#                     play["speed"] *= 3/2
-#                 elif id == 3:
-#                     play["speed"] *= 2 / 3
-#     return players
 
 
 # Function to render items
 def render_items(screen, items):
     # Randomly choose one item
-    item_id = random.randint(0, 3)
+    item_id = random.randint(0, cfg.num_items)
     item_c = item_class(screen, item_id)
     item_c.render()
     items.append(item_c)
@@ -123,7 +130,7 @@ def item_collision(player, players, item, items):
         player["pos"], item.item["pos"], radius=cfg.player_size + cfg.item_size
     )
     if collision:
-        player = power_up(item.item, player, players)
+        players = power_up(item.item, player, players)
         item.unrender()
         items.remove(item)
 
@@ -135,4 +142,4 @@ def check_for_item_collision(players, items):
         for item in items:
             players, items = item_collision(player, players, item, items)
 
-    return player
+    return players, items

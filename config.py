@@ -27,6 +27,7 @@ max_line = None
 num_items = None
 item_size = None
 item_time = None
+item_letters = None
 
 pygame.init()
 
@@ -42,8 +43,8 @@ def set_args(arg_file=None):
     arg_parser.add_argument("--max_gap", type=int, default=15)
     arg_parser.add_argument("--min_line", type=int, default=15)
     arg_parser.add_argument("--max_line", type=int, default=200)
-    arg_parser.add_argument("--num_items", type=int, default=4)
-    arg_parser.add_argument("--item_size", type=int, default=10)
+    arg_parser.add_argument("--num_items", type=int, default=5)
+    arg_parser.add_argument("--item_size", type=int, default=15)
     arg_parser.add_argument("--item_time", type=int, default=200)
 
     args = arg_parser.parse_args()
@@ -67,6 +68,7 @@ def set_args(arg_file=None):
     global num_items
     global item_size
     global item_time
+    global item_letters
 
     screen_width = args.screen_width
     screen_height = args.screen_height
@@ -87,3 +89,5 @@ def set_args(arg_file=None):
     num_items = args.num_items
     item_size = args.item_size
     item_time = args.item_time
+    # item ids: 0: self slower, 1: self faster, 2: others slower, 3: others faster, 4: direction change, 5: angle change
+    item_letters = ["->", "--->", "->", "--->", "<->", "°"]
