@@ -1,8 +1,10 @@
 import pygame
+from nn import DQN
 from player_functions import init_players
 from game_functions import game_loop
 from menu import show_menu_screen
 from display_functions import draw_screen
+from ai_player import init_ai_player
 import config as cfg
 
 # Initialize pygame
@@ -12,7 +14,10 @@ pygame.init()
 num_players, player_keys = show_menu_screen()
 
 # Initialize players and items
-players = init_players(num_players, player_keys)
+for i in range(cfg.num_ai_players):
+    model = DQN(num_players)
+    player = init_ai_player(i, model)
+players = init_players(num_players - cfg.num_ai_players, player_keys)
 last_spawn_time = pygame.time.get_ticks()
 
 # Initialize win counts dictionary

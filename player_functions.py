@@ -3,6 +3,7 @@ import math
 from decimal import *
 import config as cfg
 from items import check_for_item_collision, power_down
+from ai_player import update_ai_player_direction
 from subfunctions import (
     get_random_position,
     get_random_gap,
@@ -11,7 +12,7 @@ from subfunctions import (
 )
 
 
-def move_player(player):
+def move_player(player, players=None, items=None, screen=None):
     # check if player is alive
     if player["alive"]:
         # Get gap and line timer
@@ -23,7 +24,10 @@ def move_player(player):
             player["gap"] = True
 
         # update player direction and get player values
-        player = update_player_direction(player)
+        if player["ai"] == True:
+            player = update_ai_player_direction(player, players, items, screen)
+        else:
+            player = update_player_direction(player)
         x, y = player["pos"]
         dx, dy = player["dir"]
 
@@ -61,7 +65,7 @@ def move_player(player):
     return player
 
 
-def move_players(players, items):
+def move_players(players, items, screen=None):
     for player in players:
         if player["alive"]:
             if player["dir"] == "stop":
@@ -69,8 +73,7 @@ def move_players(players, items):
             else:
                 players = check_for_collisions(players)
                 players, items = check_for_item_collision(players, items)
-                # item_collision(player, items)
-                player = move_player(player)
+                player = move_player(player, players, items, screen)
 
 
 def init_players(num_players, player_keys):
@@ -83,7 +86,7 @@ def init_players(num_players, player_keys):
         (0, 255, 255),
     ]
     players = []
-    for i in range(num_players):
+    for i in range(cfg.num_ai_players, num_players):
         player_key = player_keys[i]
         start_pos, start_dir = get_random_position()
         start_gap, start_line = get_random_gap()

@@ -14,8 +14,9 @@ class DQN(nn.Module):
         self.item_embedding_size = 16  # Embedding size for item list
         self.screen_dim_size = 2  # Dimension size for screen dimensions
         self.hidden_size = 64  # LSTM hidden size
-        self.num_layers = 1  # Number of LSTM layers
-        self.num_actions = 3  # Left, Right, Nothing
+        self.num_fc_layers = cfg.num_layers  # Number fc layers
+        self.num_lstm_layers = cfg.num_lstm  # Number of LSTM layers
+        self.num_actions = 1  # direction of travel
         self.num_items = 15  # Item size set, if less --> padding
 
         # Embedding layers
@@ -31,19 +32,24 @@ class DQN(nn.Module):
         )
 
         # Fully connected layers
-        self.fc1 = nn.Linear(
-            self.hidden_size
-            + self.item_embedding_size * num_players
-            + self.screen_dim_size,
-            64,
+        self.fc_layers = []
+        self.fc_layers.append(
+            nn.Linear(
+                self.hidden_size
+                + self.item_embedding_size * num_players
+                + self.screen_dim_size,
+                64,
+            )
         )
-        self.fc2 = nn.Linear(64, 64)
-        self.fc3 = nn.Linear(64, self.num_actions)
+        for _ in range(self.num_fc_layers - 2):
+            self.fc_layers.append(nn.Linear(64, 64))
+        self.layers.append(nn.Linear(64, self.num_actions))
 
-    def forward(self, player_history, item_list, screen_dims):
-        # Embed player history and item list
+    def forward(self, player_history, item_list):
+        # Embed player history and item list, define screen_dims
         player_history = self.player_embedding(player_history)
         item_list = self.item_embedding(item_list)
+        screen_dims = [cfg.play_screen_width, cfg.screen_height]
 
         # Pass player history through LSTM
         _, (h_n, _) = self.lstm(player_history)
@@ -52,9 +58,11 @@ class DQN(nn.Module):
         # Concatenate LSTM output with item list and screen dimensions
         x = torch.cat((h_n, item_list.view(item_list.size(0), -1), screen_dims), dim=1)
 
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        x = self.fc3(x)
+        # Pass lstm output through fc layers
+        for i in range(self.num_fc_layers - 1):
+            x = torch.relu(self.fc_layers[i](x))
+        x = self.fc_layers[self.num_fc_layers](x)
+
         return x
 
 
@@ -113,7 +121,7 @@ def reward(player, players):
     return reward
 
 
-def loss(rewards):
+def compute_loss(rewards):
     # Compute the cumulative rewards
     cumulative_rewards = torch.cumsum(
         torch.tensor(rewards[::-1], dtype=torch.float32), dim=0
@@ -128,36 +136,3 @@ def loss(rewards):
     loss = -torch.log(normalized_rewards)
 
     return loss
-
-
-def init_ai_player(num_players, id):
-    model = DQN(num_players)
-    color = cfg.colors[id]
-
-    start_pos, start_dir = get_random_position()
-    start_gap, start_line = get_random_gap()
-    gap = False
-    player = {
-        "pos": start_pos,
-        "dir": start_dir,
-        "angle": 0,
-        "color": color,
-        "alive": True,
-        "length": 1,
-        "speed": cfg.speed,
-        "id": id,
-        "pos_history": [start_pos],
-        "size": cfg.player_size,
-        "gap": gap,
-        "gap_history": [gap],
-        "gap_timer": start_gap,
-        "line_timer": start_line,
-        "del_angle": 5,
-        "items": [],
-        "item_timer": [],
-        "left": -1,
-        "right": 1,
-        "ai": True,
-    }
-
-    return model, player

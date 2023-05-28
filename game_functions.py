@@ -70,7 +70,7 @@ def game_loop(players, num_players, player_keys, screen, win_counts, last_spawn_
             last_spawn_time = current_time
 
         # move all players and check for collisions
-        move_players(players, items)
+        move_players(players, items, screen)
 
         # check if any players are alive
         alive_players = [player for player in players if player["alive"]]

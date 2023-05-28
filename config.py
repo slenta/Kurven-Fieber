@@ -28,6 +28,12 @@ num_items = None
 item_size = None
 item_time = None
 item_letters = None
+# Define nn hyperparameters
+learning_rate = None
+num_layers = None
+num_lstm = None
+save_model_path = None
+num_ai_players = None
 
 pygame.init()
 
@@ -46,6 +52,11 @@ def set_args(arg_file=None):
     arg_parser.add_argument("--num_items", type=int, default=5)
     arg_parser.add_argument("--item_size", type=int, default=15)
     arg_parser.add_argument("--item_time", type=int, default=200)
+    arg_parser.add_argument("--learning_rate", type=int, default=0.005)
+    arg_parser.add_argument("--num_layers", type=int, default=3)
+    arg_parser.add_argument("--num_lstm", type=int, default=1)
+    arg_parser.add_argument("--save_model_path", type=str, default="\Users\Simon\Desktop\Uni\Freizeit\AchtungDieKurve\model_states")
+    arg_parser.add_argument("--num_ai_players", type=int, default=2)
 
     args = arg_parser.parse_args()
 
@@ -69,6 +80,11 @@ def set_args(arg_file=None):
     global item_size
     global item_time
     global item_letters
+    global learning_rate
+    global num_layers
+    global num_lstm
+    global save_model_path
+    global num_ai_players
 
     screen_width = args.screen_width
     screen_height = args.screen_height
@@ -91,3 +107,8 @@ def set_args(arg_file=None):
     item_time = args.item_time
     # item ids: 0: self slower, 1: self faster, 2: others slower, 3: others faster, 4: direction change, 5: angle change
     item_letters = ["->", "--->", "->", "--->", "<->", "°"]
+    learning_rate = args.learning_rate
+    num_layers = args.num_layers
+    num_lstm = args.num_lstm
+    save_model_path = args.save_model_path
+    num_ai_players = args.num_ai_players
