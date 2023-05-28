@@ -1,12 +1,13 @@
 import torch
 import torch.nn as nn
 import config as cfg
+from subfunctions import get_random_gap, get_random_position
 
 cfg.set_args()
 
 
 class DQN(nn.Module):
-    def __init__(self, input_size):
+    def __init__(self, num_players):
         super(DQN, self).__init__()
         self.player_history_size = 64  # Number of previous player positions to consider
         self.player_embedding_size = 32  # Embedding size for player history
@@ -18,9 +19,7 @@ class DQN(nn.Module):
         self.num_items = 15  # Item size set, if less --> padding
 
         # Embedding layers
-        self.player_embedding = nn.Embedding(
-            input_size["num_players"], self.player_embedding_size
-        )
+        self.player_embedding = nn.Embedding(num_players, self.player_embedding_size)
         self.item_embedding = nn.Embedding(self.num_items, self.item_embedding_size)
 
         # LSTM layer
@@ -34,7 +33,7 @@ class DQN(nn.Module):
         # Fully connected layers
         self.fc1 = nn.Linear(
             self.hidden_size
-            + self.item_embedding_size * input_size["num_items"]
+            + self.item_embedding_size * num_players
             + self.screen_dim_size,
             64,
         )
@@ -91,3 +90,74 @@ class preprocessing:
             )
 
         return player_histories, items
+
+
+def reward(player, players):
+    # loss for the other players actions
+    others_rewards = 0
+    for play in players:
+        if play != player:
+            if play["alive"] == False:
+                others_rewards += 1
+
+    # Compute loss for staying alive
+    alive = player["alive"]
+    if alive == True:
+        alive_reward = 1
+    else:
+        alive_reward = -1
+
+    # Total loss
+    reward = alive_reward + others_rewards
+
+    return reward
+
+
+def loss(rewards):
+    # Compute the cumulative rewards
+    cumulative_rewards = torch.cumsum(
+        torch.tensor(rewards[::-1], dtype=torch.float32), dim=0
+    )[::-1]
+
+    # Normalize the cumulative rewards
+    normalized_rewards = (
+        cumulative_rewards - cumulative_rewards.mean()
+    ) / cumulative_rewards.std()
+
+    # Compute the loss as the negative log probabilities weighted by the rewards
+    loss = -torch.log(normalized_rewards)
+
+    return loss
+
+
+def init_ai_player(num_players, id):
+    model = DQN(num_players)
+    color = cfg.colors[id]
+
+    start_pos, start_dir = get_random_position()
+    start_gap, start_line = get_random_gap()
+    gap = False
+    player = {
+        "pos": start_pos,
+        "dir": start_dir,
+        "angle": 0,
+        "color": color,
+        "alive": True,
+        "length": 1,
+        "speed": cfg.speed,
+        "id": id,
+        "pos_history": [start_pos],
+        "size": cfg.player_size,
+        "gap": gap,
+        "gap_history": [gap],
+        "gap_timer": start_gap,
+        "line_timer": start_line,
+        "del_angle": 5,
+        "items": [],
+        "item_timer": [],
+        "left": -1,
+        "right": 1,
+        "ai": True,
+    }
+
+    return model, player

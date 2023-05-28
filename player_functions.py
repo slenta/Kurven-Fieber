@@ -108,6 +108,7 @@ def init_players(num_players, player_keys):
             "item_timer": [],
             "left": player_key["left"],
             "right": player_key["right"],
+            "ai": False,
         }
         players.append(player)
     return players
