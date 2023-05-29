@@ -34,6 +34,7 @@ num_layers = None
 num_lstm = None
 save_model_path = None
 num_ai_players = None
+resume_iter = None
 
 pygame.init()
 
@@ -55,8 +56,13 @@ def set_args(arg_file=None):
     arg_parser.add_argument("--learning_rate", type=int, default=0.005)
     arg_parser.add_argument("--num_layers", type=int, default=3)
     arg_parser.add_argument("--num_lstm", type=int, default=1)
-    arg_parser.add_argument("--save_model_path", type=str, default="\Users\Simon\Desktop\Uni\Freizeit\AchtungDieKurve\model_states")
-    arg_parser.add_argument("--num_ai_players", type=int, default=2)
+    arg_parser.add_argument(
+        "--save_model_path",
+        type=str,
+        default="/Users/Simon/Desktop/Uni/Freizeit/AchtungDieKurve/model_states",
+    )
+    arg_parser.add_argument("--num_ai_players", type=int, default=1)
+    arg_parser.add_argument("--resume_iter", type=int, default=0)
 
     args = arg_parser.parse_args()
 
@@ -85,6 +91,7 @@ def set_args(arg_file=None):
     global num_lstm
     global save_model_path
     global num_ai_players
+    global resume_iter
 
     screen_width = args.screen_width
     screen_height = args.screen_height
@@ -112,3 +119,4 @@ def set_args(arg_file=None):
     num_lstm = args.num_lstm
     save_model_path = args.save_model_path
     num_ai_players = args.num_ai_players
+    resume_iter = args.resume_iter

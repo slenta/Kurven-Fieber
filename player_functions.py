@@ -26,6 +26,7 @@ def move_player(player, players=None, items=None, screen=None):
         # update player direction and get player values
         if player["ai"] == True:
             player = update_ai_player_direction(player, players, items, screen)
+            player["iteration"] += 1
         else:
             player = update_player_direction(player)
         x, y = player["pos"]
@@ -37,7 +38,6 @@ def move_player(player, players=None, items=None, screen=None):
 
         # update item timers
         for i in range(len(player["items"])):
-            print(len(player["items"]), len(player["item_timer"]), i)
             if player["item_timer"][i] <= 0:
                 player = power_down(player["items"][i], player["item_timer"][i], player)
                 break
@@ -76,7 +76,7 @@ def move_players(players, items, screen=None):
                 player = move_player(player, players, items, screen)
 
 
-def init_players(num_players, player_keys):
+def init_players(num_players, player_keys, players):
     player_colors = [
         (255, 0, 0),
         (0, 255, 0),
@@ -85,9 +85,8 @@ def init_players(num_players, player_keys):
         (255, 0, 255),
         (0, 255, 255),
     ]
-    players = []
-    for i in range(cfg.num_ai_players, num_players):
-        player_key = player_keys[i]
+    for i in range(cfg.num_ai_players, num_players + 1):
+        player_key = player_keys[i - cfg.num_ai_players]
         start_pos, start_dir = get_random_position()
         start_gap, start_line = get_random_gap()
         gap = False

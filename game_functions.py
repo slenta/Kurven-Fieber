@@ -1,4 +1,5 @@
 import pygame
+import torch
 from player_functions import get_random_position, get_random_gap
 from player_functions import move_players, get_winner
 from display_functions import display_text, draw_players, display_winner, draw_screen
@@ -14,8 +15,8 @@ def reset_game(players, screen, player_keys, win_counts):
         start_pos, start_dir = get_random_position()
         start_gap, start_line = get_random_gap()
         player["speed"] = cfg.speed
-        player["left"] = player_keys[player["id"]]["left"]
-        player["right"] = player_keys[player["id"]]["right"]
+        player["left"] = player_keys[player["id"] - cfg.num_ai_players]["left"]
+        player["right"] = player_keys[player["id"] - cfg.num_ai_players]["right"]
         player["pos"] = start_pos
         player["dir"] = start_dir
         player["gap_timer"] = start_gap
@@ -57,6 +58,13 @@ def game_loop(players, num_players, player_keys, screen, win_counts, last_spawn_
                     winner, items = reset_game(players, screen, player_keys, win_counts)
                     game_over = False
                 elif event.key == pygame.K_ESCAPE and game_over:
+                    # Save nn models
+                    for i in range(cfg.num_ai_players):
+                        player_iter = players[i]["iteration"]
+                        torch.save(
+                            players[i]["model"].state_dict(),
+                            f"{cfg.save_model_path}\model_checkpoint_iter_{player_iter}_player_{i}.pth",
+                        )
                     running = False
 
         # Get current time in milliseconds
@@ -120,7 +128,7 @@ def game_loop(players, num_players, player_keys, screen, win_counts, last_spawn_
                     running = False
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
-                        for player in players:
+                        for player, player_key in zip(players, player_keys):
                             for i in range(len(player["items"])):
                                 player, player_key = power_down(
                                     player["items"][i],

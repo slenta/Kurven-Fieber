@@ -14,10 +14,17 @@ pygame.init()
 num_players, player_keys = show_menu_screen()
 
 # Initialize players and items
+players = []
 for i in range(cfg.num_ai_players):
+    iteration = cfg.resume_iter
+    # if new model:
     model = DQN(num_players)
-    player = init_ai_player(i, model)
-players = init_players(num_players - cfg.num_ai_players, player_keys)
+    # if loading old model
+    # model = dqn(num_players)
+    # model.load_state_dict(torch.load(f"{cfg.save_model_path}\model_checkpoint_iter_{iteration}_player_{i}.pth"))
+    player = init_ai_player(i, model, iteration)
+    players.append(player)
+players = init_players(num_players - cfg.num_ai_players, player_keys, players)
 last_spawn_time = pygame.time.get_ticks()
 
 # Initialize win counts dictionary
