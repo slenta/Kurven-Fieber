@@ -1,4 +1,5 @@
 import pygame
+import torch
 from nn import DQN
 from player_functions import init_players
 from game_functions import game_loop
@@ -6,6 +7,9 @@ from menu import show_menu_screen
 from display_functions import draw_screen
 from ai_player import init_ai_player
 import config as cfg
+
+# Enable anomaly detection
+torch.autograd.set_detect_anomaly(True)
 
 # Initialize pygame
 pygame.init()

@@ -48,11 +48,11 @@ def init_ai_player(id, model, iteration):
         "right": 1,
         "ai": True,
         "model": model,
-        "outcomes": [0],
+        "outcomes": torch.tensor([0]),
         "optimizer": optimizer,
         "iteration": iteration,
-        "pred_actions": [],
-        "actions": [],
+        "pred_actions": torch.tensor(data=[]),
+        "actions": torch.tensor(data=[], dtype=torch.int64),
     }
 
     return player
@@ -65,24 +65,35 @@ def update_ai_player_direction(player, players, items, screen):
 
     # get model output
     model = player["model"]
-    output = model.forward(players_histories, items)
-    pred_action = torch.argmax(output)
+    q_values = model.forward(players_histories, items)
+    pred_action = torch.argmax(q_values)
 
     # change predicted actions to actual actions by epsilon or softmax exploration
-    action = epsilon_greedy_action(pred_action)
-    player["pred_actions"].append(pred_action)
-    player["actions"].append(action)
-    print(pred_action, action)
+    action = epsilon_greedy_action(q_values)
+
+    # Update pred_actions and actions
+    player["pred_actions"] = torch.cat(
+        [player["pred_actions"], q_values.unsqueeze(0)], dim=0
+    )
+    player["actions"] = torch.cat(
+        [player["actions"], action.clone().unsqueeze(0)],
+        dim=0,
+    )
 
     # update model
     optimizer = player["optimizer"]
     optimizer.zero_grad()
     outcome = reward(player, players)
-    player["outcomes"].append(outcome)
+    player["outcomes"] = torch.cat([player["outcomes"], outcome.unsqueeze(0)], dim=0)
 
-    loss = compute_loss(player["outcomes"], player["actions"], player["pred_actions"])
-    print(loss)
-    loss.backward()
+    loss = compute_loss(
+        player["outcomes"],
+        player["pred_actions"],
+        player["actions"],
+    )
+
+    # Backpropagation
+    loss.backward(retain_graph=True)
     optimizer.step()
 
     # update player variables
@@ -90,9 +101,9 @@ def update_ai_player_direction(player, players, items, screen):
     player["optimizer"] = optimizer
 
     # Change direction depending on model output
-    if output >= 0.3:
+    if pred_action == 0:
         player["angle"] -= player["del_angle"]
-    if output <= -0.3:
+    if pred_action == 1:
         player["angle"] += player["del_angle"]
 
     # Normalize the angle to keep it within 0-360 degrees range

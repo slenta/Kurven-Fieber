@@ -63,7 +63,7 @@ class DQN(nn.Module):
         )
 
         # Pass player history through LSTM
-        _, (h_n, _) = self.lstm(player_history)
+        _, (h_n, _) = self.lstm(player_history.clone().detach())
         h_n = h_n.squeeze(dim=0)
 
         # Concatenate LSTM output with item list and screen dimensions
@@ -133,32 +133,34 @@ def reward(player, players):
 
     # Total loss
     reward = alive_reward + others_rewards
+    reward = torch.tensor(reward)
 
     return reward
 
 
 def compute_loss(rewards, pred_actions, actions):
     # Compute the cumulative rewards
-    cumulative_rewards = torch.cumsum(
-        torch.tensor(rewards, dtype=torch.float32, requires_grad=True), dim=0
-    )
+    cumulative_rewards = torch.cumsum(rewards.clone(), dim=0, dtype=torch.float)
 
     # Normalize the cumulative rewards
     normalized_rewards = (
         cumulative_rewards - cumulative_rewards.mean()
     ) / cumulative_rewards.std()
     normalized_rewards = normalized_rewards[1:]
-    print("normalized", normalized_rewards)
+
+    # Transform predicted actions
+    pred_actions = torch.softmax(pred_actions, dim=1)
 
     # Compute the negative log probabilities of the predicted actions
-    log_probabilities = torch.log(pred_actions)
+    log_probabilities = -torch.log(pred_actions)
 
     # Select the log probabilities corresponding to the actual actions taken
-    selected_log_probabilities = log_probabilities.gather(1, actions.unsqueeze(1))
+    selected_log_probabilities = log_probabilities.gather(
+        dim=1, index=actions.unsqueeze(1)
+    )
 
     # Compute the loss as the negative log probabilities weighted by the rewards
     loss = -torch.mean(selected_log_probabilities * rewards)
-    print("total", loss)
 
     return loss
 
@@ -167,10 +169,10 @@ def epsilon_greedy_action(q_values):
     epsilon = 0.2
     if random.random() < epsilon:
         # Explore: choose a random action
-        action = random.choice(range(len(q_values)))
+        action = torch.tensor(random.choice(range(len(q_values))))
     else:
         # Exploit: choose the action with the highest Q-value
-        action = q_values.argmax().item()
+        action = torch.argmax(q_values)
     return action
 
 

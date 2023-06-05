@@ -85,7 +85,7 @@ def init_players(num_players, player_keys, players):
         (255, 0, 255),
         (0, 255, 255),
     ]
-    for i in range(cfg.num_ai_players, num_players + 1):
+    for i in range(cfg.num_ai_players, num_players):
         player_key = player_keys[i - cfg.num_ai_players]
         start_pos, start_dir = get_random_position()
         start_gap, start_line = get_random_gap()

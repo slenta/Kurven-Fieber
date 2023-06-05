@@ -134,7 +134,6 @@ def game_loop(players, num_players, player_keys, screen, win_counts, last_spawn_
                                     player["items"][i],
                                     player["item_timer"][i],
                                     player,
-                                    player_key,
                                 )
 
                         winner, items = reset_game(

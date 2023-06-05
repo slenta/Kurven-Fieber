@@ -61,7 +61,7 @@ def set_args(arg_file=None):
         type=str,
         default="/Users/Simon/Desktop/Uni/Freizeit/AchtungDieKurve/model_states",
     )
-    arg_parser.add_argument("--num_ai_players", type=int, default=1)
+    arg_parser.add_argument("--num_ai_players", type=int, default=0)
     arg_parser.add_argument("--resume_iter", type=int, default=0)
 
     args = arg_parser.parse_args()
