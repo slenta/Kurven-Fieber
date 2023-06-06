@@ -1,5 +1,6 @@
 import pygame
 import torch
+import numpy as np
 from nn import DQN
 from player_functions import init_players
 from game_functions import game_loop
@@ -31,8 +32,9 @@ for i in range(cfg.num_ai_players):
 players = init_players(num_players - cfg.num_ai_players, player_keys, players)
 last_spawn_time = pygame.time.get_ticks()
 
-# Initialize win counts dictionary
+# Initialize win counts dictionary, game state
 win_counts = {i + 1: 0 for i in range(num_players)}
+game_state = np.zeros(cfg.play_screen_width, cfg.screen_height)
 
 # Create Game screen
 screen = pygame.display.set_mode((cfg.screen_width, cfg.screen_height))

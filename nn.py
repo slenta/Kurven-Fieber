@@ -40,14 +40,15 @@ class DQN(nn.Module):
 
         # Fully connected layers
         self.fc_layers = []
-        self.fc_layers.append(
-            nn.Linear(
-                self.hidden_size
-                + self.item_embedding_size * self.num_items * 3
-                + self.screen_dim_size,
-                64,
-            )
-        )
+        # self.fc_layers.append(
+        #     nn.Linear(
+        #         self.player_embedding_size * num_players * 512
+        #         + self.item_embedding_size * self.num_items * 3
+        #         + self.screen_dim_size,
+        #         64,
+        #     )
+        # )
+        self.fc_layers.append(nn.Linear(199682, 64))
         for _ in range(self.num_fc_layers - 2):
             self.fc_layers.append(nn.Linear(64, 64))
         self.fc_layers.append(nn.Linear(64, self.num_actions))
@@ -63,11 +64,11 @@ class DQN(nn.Module):
         )
 
         # Pass player history through LSTM
-        _, (h_n, _) = self.lstm(player_history.clone().detach())
-        h_n = h_n.squeeze(dim=0)
+        # _, (h_n, _) = self.lstm(player_history.clone().detach())
+        # h_n = h_n.squeeze(dim=0)
 
         # Concatenate LSTM output with item list and screen dimensions
-        x = torch.cat((h_n, items.flatten(), screen_dims), dim=0)
+        x = torch.cat((player_history.flatten(), items.flatten(), screen_dims), dim=0)
 
         # Pass lstm output through fc layers
         for i in range(self.num_fc_layers - 1):
@@ -181,3 +182,15 @@ def softmax_action(q_values):
     probabilities = torch.softmax(q_values / temperature, dim=0)
     action = torch.multinomial(probabilities, 1).item()
     return action
+
+
+def game_state(players):
+    # Divide screen into 20 different sections
+    num_sections = 20
+    game_size = cfg.play_screen_width * cfg.screen_height
+    sec_width = cfg.play_screen_width / num_sections
+    sec_height = cfg.screen_height / num_sections
+    sections = np.zeros((num_sections, game_size / num_sections))
+
+    for section in num_sections:
+        sec_dims = (section * sec_width, section * sec_height)
