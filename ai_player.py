@@ -1,4 +1,5 @@
 import config as cfg
+import numpy as np
 from nn import (
     DQN,
     compute_loss,
@@ -25,9 +26,22 @@ def init_ai_player(id, model, iteration):
     color = player_colors[id]
     start_pos, start_dir = get_random_position()
     start_gap, start_line = get_random_gap()
+    game_state_pos = np.array(
+        [
+            np.arange(
+                int(round(start_pos[0], 0)) - int(cfg.player_size / 2),
+                int(round(start_pos[0], 0)) + int(cfg.player_size / 2),
+            ),
+            np.arange(
+                int(round(start_pos[1], 0)) - int(cfg.player_size / 2),
+                int(round(start_pos[1], 0)) + int(cfg.player_size / 2),
+            ),
+        ]
+    )
     gap = False
     player = {
         "pos": start_pos,
+        "game_state_pos": game_state_pos,
         "dir": start_dir,
         "angle": 0,
         "color": color,
@@ -58,14 +72,14 @@ def init_ai_player(id, model, iteration):
     return player
 
 
-def update_ai_player_direction(player, players, items, screen):
+def update_ai_player_direction(player, game_state, players):
     # Preprocess player data for the nn
-    prepro = preprocessing(players, items, screen)
-    players_histories, items = prepro.get_game_variables()
+    prepro = preprocessing(player, game_state)
+    section, densities = prepro.get_game_variables()
 
     # get model output
     model = player["model"]
-    q_values = model.forward(players_histories, items)
+    q_values = model.forward(section, densities)
     pred_action = torch.argmax(q_values)
 
     # change predicted actions to actual actions by epsilon or softmax exploration

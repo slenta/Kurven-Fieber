@@ -29,8 +29,9 @@ def reset_game(players, screen, player_keys, win_counts):
         )
         player["game_state_pos"] = game_state_pos
         player["speed"] = cfg.speed
-        player["left"] = player_keys[player["id"] - cfg.num_ai_players]["left"]
-        player["right"] = player_keys[player["id"] - cfg.num_ai_players]["right"]
+        if player["ai"] == False:
+            player["left"] = player_keys[player["id"] - cfg.num_ai_players]["left"]
+            player["right"] = player_keys[player["id"] - cfg.num_ai_players]["right"]
         player["pos"] = start_pos
         player["dir"] = start_dir
         player["gap_timer"] = start_gap
@@ -97,7 +98,7 @@ def game_loop(players, num_players, player_keys, screen, win_counts, last_spawn_
             last_spawn_time = current_time
 
         # move all players and check for collisions
-        players, game_state = move_players(players, items, game_state, screen)
+        players, game_state = move_players(players, items, game_state)
 
         # check if any players are alive
         alive_players = [player for player in players if player["alive"]]

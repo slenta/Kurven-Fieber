@@ -13,7 +13,7 @@ from subfunctions import (
 )
 
 
-def move_player(player, game_state, players=None, items=None, screen=None):
+def move_player(player, game_state, players=None):
     # check if player is alive
     if player["alive"]:
         # Get gap and line timer
@@ -26,7 +26,7 @@ def move_player(player, game_state, players=None, items=None, screen=None):
 
         # update player direction and get player values
         if player["ai"] == True:
-            player = update_ai_player_direction(player, players, items, screen)
+            player = update_ai_player_direction(player, game_state, players)
             player["iteration"] += 1
         else:
             player = update_player_direction(player)
@@ -82,7 +82,7 @@ def move_player(player, game_state, players=None, items=None, screen=None):
     return player
 
 
-def move_players(players, items, game_state, screen=None):
+def move_players(players, items, game_state):
     for player in players:
         if player["alive"]:
             if player["dir"] == "stop":
@@ -92,7 +92,7 @@ def move_players(players, items, game_state, screen=None):
                 players, items, game_state = check_for_item_collision(
                     players, items, game_state
                 )
-                player = move_player(player, game_state, players, items, screen)
+                player = move_player(player, game_state, players)
 
     return players, game_state
 

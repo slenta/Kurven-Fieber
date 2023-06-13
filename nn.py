@@ -23,12 +23,8 @@ class DQN(nn.Module):
         self.num_items = 16  # Item size set, if less --> padding
 
         # Embedding layers
-        self.player_embedding = nn.Embedding(
-            cfg.play_screen_width, self.player_embedding_size
-        )
-        self.item_embedding = nn.Embedding(
-            cfg.play_screen_width, self.item_embedding_size
-        )
+        self.section_embedding = nn.Embedding(20, self.player_embedding_size)
+        self.density_embedding = nn.Embedding(1, self.item_embedding_size)
 
         # LSTM layer
         self.lstm = nn.LSTM(
@@ -48,15 +44,16 @@ class DQN(nn.Module):
         #         64,
         #     )
         # )
-        self.fc_layers.append(nn.Linear(199682, 64))
+        self.fc_layers.append(nn.Linear(81794, 64))
         for _ in range(self.num_fc_layers - 2):
             self.fc_layers.append(nn.Linear(64, 64))
         self.fc_layers.append(nn.Linear(64, self.num_actions))
 
-    def forward(self, player_history, item_list):
+    def forward(self, section, densities):
         # Embed player history and item list, define screen_dims
-        player_history = self.player_embedding(player_history)
-        items = self.item_embedding(item_list)
+        sec_emb = self.section_embedding(section)
+        den_emb = self.density_embedding(densities)
+
         screen_dims = torch.tensor(
             [cfg.play_screen_width, cfg.screen_height],
             dtype=torch.float16,
@@ -68,7 +65,7 @@ class DQN(nn.Module):
         # h_n = h_n.squeeze(dim=0)
 
         # Concatenate LSTM output with item list and screen dimensions
-        x = torch.cat((player_history.flatten(), items.flatten(), screen_dims), dim=0)
+        x = torch.cat((sec_emb.flatten(), den_emb.flatten(), screen_dims), dim=0)
 
         # Pass lstm output through fc layers
         for i in range(self.num_fc_layers - 1):
@@ -79,42 +76,45 @@ class DQN(nn.Module):
 
 
 class preprocessing:
-    def __init__(self, players, items, screen) -> None:
-        self.players = players
-        self.items = items
-        self.screen = screen
+    def __init__(self, player, game_state) -> None:
+        self.game_state = game_state
+        self.num_sections = 20
+        self.player = player
 
     def get_game_variables(self):
-        num_players = len(self.players)
+        # Design NN Input: Game state + density of different sections
+        # Design sections
+        section_width = cfg.play_screen_width // self.num_sections
+        section_height = cfg.screen_height // self.num_sections
 
-        # Design player_histories, padd to 512
-        player_histories = np.zeros(shape=(num_players, 512, 3))
-        for player in self.players:
-            history = np.array(player["pos_history"])[:512]
-            gaps = np.array(player["gap_history"])[:512]
-            story = np.zeros((len(gaps), 3))
-            for i in range(len(gaps)):
-                story[i] = np.append(history[i], gaps[i])
-            player_id = player["id"]
-            player_histories[player_id, : story.shape[0], :] = story
+        # Calculate section density
+        densities = np.zeros(self.num_sections)
+        curr_section = np.zeros((section_width, section_height))
+        for sec in range(self.num_sections):
+            section = self.game_state[
+                sec * section_width : (sec + 1) * section_width,
+                sec * section_height : (sec + 1) * section_height,
+            ]
+            coll_points = np.where((section >= 1) & (section <= 8))
+            sec_density = len(coll_points) / (section_width * section_height)
+            densities[sec] = sec_density
 
-        player_histories = player_histories.flatten()
-        player_histories = torch.from_numpy(player_histories)
-        player_histories.requires_grad = True
-        player_histories = player_histories.int()
+            # Check if player is in that section
+            x, y = self.player["pos"]
+            if (sec * section_width <= x < (sec + 1) * section_width) and (
+                sec * section_height <= y < (sec + 1) * section_height
+            ):
+                curr_section = section
 
-        nn_items = np.zeros(shape=(16, 3))
-        for item, i in zip(self.items, range(len(self.items))):
-            pos = np.array(item.item["pos"])
-            item_id = item.item["id"]
-            nn_items[i, :] = np.append(pos, item_id)
+        # Convert to tensors
+        curr_section = torch.tensor(
+            curr_section, dtype=torch.float16, requires_grad=True
+        ).long()
+        densities = torch.tensor(
+            densities, dtype=torch.float16, requires_grad=True
+        ).long()
 
-        nn_items = nn_items.flatten()
-        nn_items = torch.from_numpy(nn_items)
-        nn_items.requires_grad = True
-        nn_items = nn_items.int()
-
-        return player_histories, nn_items
+        return curr_section, densities
 
 
 def reward(player, players):
@@ -182,15 +182,3 @@ def softmax_action(q_values):
     probabilities = torch.softmax(q_values / temperature, dim=0)
     action = torch.multinomial(probabilities, 1).item()
     return action
-
-
-def game_state(players):
-    # Divide screen into 20 different sections
-    num_sections = 20
-    game_size = cfg.play_screen_width * cfg.screen_height
-    sec_width = cfg.play_screen_width / num_sections
-    sec_height = cfg.screen_height / num_sections
-    sections = np.zeros((num_sections, game_size / num_sections))
-
-    for section in num_sections:
-        sec_dims = (section * sec_width, section * sec_height)
