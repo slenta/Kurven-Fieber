@@ -90,7 +90,7 @@ def game_loop(players, num_players, player_keys, screen, win_counts, last_spawn_
 
         # Check if it's time to spawn a new item (every 10 seconds)
         if current_time - last_spawn_time >= 1000:
-            if len(items) <= cfg.player_max_history:
+            if len(items) <= cfg.max_items:
                 items, game_state = render_items(screen, items, game_state)
 
             # Update the last spawn time

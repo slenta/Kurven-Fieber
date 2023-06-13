@@ -43,8 +43,8 @@ pygame.init()
 
 def set_args(arg_file=None):
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument("--screen_width", type=int, default=740)
-    arg_parser.add_argument("--screen_height", type=int, default=480)
+    arg_parser.add_argument("--screen_width", type=int, default=940)
+    arg_parser.add_argument("--screen_height", type=int, default=680)
     arg_parser.add_argument("--score_section_width", type=int, default=200)
     arg_parser.add_argument("--speed", type=int, default=2)
     arg_parser.add_argument("--player_size", type=int, default=6)
