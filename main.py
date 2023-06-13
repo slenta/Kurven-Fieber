@@ -34,7 +34,6 @@ last_spawn_time = pygame.time.get_ticks()
 
 # Initialize win counts dictionary, game state
 win_counts = {i + 1: 0 for i in range(num_players)}
-game_state = np.zeros(cfg.play_screen_width, cfg.screen_height)
 
 # Create Game screen
 screen = pygame.display.set_mode((cfg.screen_width, cfg.screen_height))

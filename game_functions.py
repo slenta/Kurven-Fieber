@@ -1,5 +1,6 @@
 import pygame
 import torch
+import numpy as np
 from player_functions import get_random_position, get_random_gap
 from player_functions import move_players, get_winner
 from display_functions import display_text, draw_players, display_winner, draw_screen
@@ -14,6 +15,19 @@ def reset_game(players, screen, player_keys, win_counts):
         player["alive"] = True
         start_pos, start_dir = get_random_position()
         start_gap, start_line = get_random_gap()
+        game_state_pos = np.array(
+            [
+                np.arange(
+                    int(round(start_pos[0], 0)) - int(cfg.player_size / 2),
+                    int(round(start_pos[0], 0)) + int(cfg.player_size / 2),
+                ),
+                np.arange(
+                    int(round(start_pos[1], 0)) - int(cfg.player_size / 2),
+                    int(round(start_pos[1], 0)) + int(cfg.player_size / 2),
+                ),
+            ]
+        )
+        player["game_state_pos"] = game_state_pos
         player["speed"] = cfg.speed
         player["left"] = player_keys[player["id"] - cfg.num_ai_players]["left"]
         player["right"] = player_keys[player["id"] - cfg.num_ai_players]["right"]
@@ -35,11 +49,12 @@ def reset_game(players, screen, player_keys, win_counts):
     # Refresh the screen
     draw_screen(screen, win_counts)
     pygame.display.flip()
+    game_state = init_game_state()
 
     # Pause briefly to give players time to reposition
     pygame.time.wait(1000)
 
-    return winner, items
+    return winner, items, game_state
 
 
 def game_loop(players, num_players, player_keys, screen, win_counts, last_spawn_time):
@@ -48,6 +63,7 @@ def game_loop(players, num_players, player_keys, screen, win_counts, last_spawn_
     running = True
     winner = None
     items = []
+    game_state = init_game_state()
 
     while running:
         for event in pygame.event.get():
@@ -55,7 +71,9 @@ def game_loop(players, num_players, player_keys, screen, win_counts, last_spawn_
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and game_over:
-                    winner, items = reset_game(players, screen, player_keys, win_counts)
+                    winner, items, game_state = reset_game(
+                        players, screen, player_keys, win_counts
+                    )
                     game_over = False
                 elif event.key == pygame.K_ESCAPE and game_over:
                     # Save nn models
@@ -72,13 +90,14 @@ def game_loop(players, num_players, player_keys, screen, win_counts, last_spawn_
 
         # Check if it's time to spawn a new item (every 10 seconds)
         if current_time - last_spawn_time >= 1000:
-            items = render_items(screen, items)
+            if len(items) <= cfg.player_max_history:
+                items, game_state = render_items(screen, items, game_state)
 
             # Update the last spawn time
             last_spawn_time = current_time
 
         # move all players and check for collisions
-        move_players(players, items, screen)
+        players, game_state = move_players(players, items, game_state, screen)
 
         # check if any players are alive
         alive_players = [player for player in players if player["alive"]]
@@ -136,7 +155,7 @@ def game_loop(players, num_players, player_keys, screen, win_counts, last_spawn_
                                     player,
                                 )
 
-                        winner, items = reset_game(
+                        winner, items, game_state = reset_game(
                             players, num_players, player_keys, win_counts
                         )
                     elif event.key == pygame.K_ESCAPE:
@@ -149,3 +168,9 @@ def game_loop(players, num_players, player_keys, screen, win_counts, last_spawn_
         cfg.clock.tick(60)
 
     pygame.quit()
+
+
+def init_game_state():
+    game_state = np.zeros(shape=(cfg.play_screen_width - 10, cfg.screen_height - 10))
+    game_state = np.pad(game_state, 5, constant_values=-1)
+    return game_state

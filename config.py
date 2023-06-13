@@ -9,6 +9,7 @@ score_section_width = None
 play_screen_width = None
 # Player arguments
 player_size = None
+player_max_history = None
 speed = None
 # Define colors
 white = None
@@ -28,6 +29,7 @@ num_items = None
 item_size = None
 item_time = None
 item_letters = None
+max_items = None
 # Define nn hyperparameters
 learning_rate = None
 num_layers = None
@@ -45,7 +47,8 @@ def set_args(arg_file=None):
     arg_parser.add_argument("--screen_height", type=int, default=480)
     arg_parser.add_argument("--score_section_width", type=int, default=200)
     arg_parser.add_argument("--speed", type=int, default=2)
-    arg_parser.add_argument("--player_size", type=int, default=7)
+    arg_parser.add_argument("--player_size", type=int, default=6)
+    arg_parser.add_argument("--player_max_history", type=int, default=32)
     arg_parser.add_argument("--min_gap", type=int, default=10)
     arg_parser.add_argument("--max_gap", type=int, default=15)
     arg_parser.add_argument("--min_line", type=int, default=15)
@@ -61,8 +64,9 @@ def set_args(arg_file=None):
         type=str,
         default="/Users/Simon/Desktop/Uni/Freizeit/AchtungDieKurve/model_states",
     )
-    arg_parser.add_argument("--num_ai_players", type=int, default=2)
+    arg_parser.add_argument("--num_ai_players", type=int, default=0)
     arg_parser.add_argument("--resume_iter", type=int, default=0)
+    arg_parser.add_argument("--max_items", type=int, default=15)
 
     args = arg_parser.parse_args()
 
@@ -72,6 +76,7 @@ def set_args(arg_file=None):
     global play_screen_width
     global speed
     global player_size
+    global player_max_history
     global white
     global black
     global green
@@ -92,6 +97,7 @@ def set_args(arg_file=None):
     global save_model_path
     global num_ai_players
     global resume_iter
+    global max_items
 
     screen_width = args.screen_width
     screen_height = args.screen_height
@@ -99,6 +105,7 @@ def set_args(arg_file=None):
     play_screen_width = args.screen_width - args.score_section_width
     speed = args.speed
     player_size = args.player_size
+    player_max_history = args.player_max_history
     white = (255, 255, 255)
     black = (0, 0, 0)
     green = (0, 255, 0)
@@ -120,3 +127,4 @@ def set_args(arg_file=None):
     save_model_path = args.save_model_path
     num_ai_players = args.num_ai_players
     resume_iter = args.resume_iter
+    max_items = args.max_items

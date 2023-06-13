@@ -1,4 +1,5 @@
 import random
+import numpy as np
 import config as cfg
 import pygame
 import math
@@ -65,47 +66,105 @@ def do_segments_intersect(seg1_start, seg1_end, seg2_start, seg2_end):
         return False
 
 
-def check_for_collisions(players):
+def check_for_collisions(players, game_state):
     for player in players:
         if not player["alive"]:
             continue
-        player_pos = player["pos"]
-        player_history = player["pos_history"]
-        gap_history = player["gap_history"]
-        player_size = player["size"]
+        # Alternative check using game_state variable
+        gs_pos = player["game_state_pos"]
+        gs_stack = np.column_stack(gs_pos)
+        player_pairs = False
 
-        # check collision with own line
-        for pos, gap in zip(player_history[5:], gap_history[5:]):
-            if not gap:
-                intersect = do_points_intersect(pos, player_pos)
-                if intersect:
-                    player["alive"] = False
-                    break
+        if not player["gap"]:
+            # Select points from game stack that would lead to collision and compare to position
+            coll_points = np.nonzero(
+                (game_state >= 1) & (game_state <= 5) & (game_state != player["id"] + 2)
+            )
+            player_pairs = np.any(
+                (coll_points[0][:, np.newaxis] == gs_pos[0])
+                & (coll_points[1][:, np.newaxis] == gs_pos[1])
+            )
 
-        # check collision with other player lines
-        for other_player in players:
-            if other_player["id"] == player["id"]:
-                continue
-            other_history = other_player["pos_history"]
-            other_gap = other_player["gap_history"]
-            for pos, gap in zip(other_history, other_gap):
-                if not gap:
-                    intersect = do_points_intersect(pos, player_pos)
-                    if intersect:
-                        player["alive"] = False
-                        break
+        # Check if colliding with walls
+        wall_points = np.nonzero(game_state == -1)
+        wall_pairs = np.any(
+            (wall_points[0][:, np.newaxis] == gs_pos[0])
+            & (wall_points[1][:, np.newaxis] == gs_pos[1])
+        )
 
-        # check collision with screen edges
-        if (
-            player_pos[0] < player_size
-            or player_pos[0] > cfg.screen_width - cfg.score_section_width - player_size
-            or player_pos[1] < player_size
-            or player_pos[1] > cfg.screen_height - player_size
-        ):
+        # slow list solution
+        # line_coll = game_state[
+        #     np.where(
+        #         (game_state >= 2) & (game_state <= 5) & (game_state != player["id"] + 2)
+        #     )[0]
+        # ].tolist()
+        # coll_points_line = set(zip(*line_coll)) & set(zip(*gs_list))
+
+        # wall_coll = game_state[np.where(game_state == -1)[0]].tolist()
+        # coll_points_wall = set(zip(*wall_coll)) & set(zip(*gs_list))
+
+        # If collision: kill player, otherwise: update game state
+        if wall_pairs or player_pairs:
             player["alive"] = False
-            break
+        else:
+            # At first change to player id
+            game_state[gs_pos[0], gs_pos[1]] = player["id"] + 2
 
-    return players
+            # After direct collision period: change to 1
+            if len(player["pos_history"]) >= 8 and not player["gap_history"][7]:
+                x, y = player["pos_history"][7]
+                x_pos = (
+                    np.arange(
+                        int(round(x, 0)) - int(player["size"] / 2),
+                        int(round(x, 0)) + int(player["size"] / 2),
+                    ),
+                )
+                y_pos = (
+                    np.arange(
+                        int(round(y, 0)) - int(player["size"] / 2),
+                        int(round(y, 0)) + int(player["size"] / 2),
+                    ),
+                )
+                if not player["gap"]:
+                    game_state[x_pos, y_pos] = 1
+
+        # player_pos = player["pos"]
+        # player_history = player["pos_history"]
+        # gap_history = player["gap_history"]
+        # player_size = player["size"]
+
+        # # check collision with own line
+        # for pos, gap in zip(player_history[5:], gap_history[5:]):
+        #     if not gap:
+        #         intersect = do_points_intersect(pos, player_pos)
+        #         if intersect:
+        #             player["alive"] = False
+        #             break
+
+        # # check collision with other player lines
+        # for other_player in players:
+        #     if other_player["id"] == player["id"]:
+        #         continue
+        #     other_history = other_player["pos_history"]
+        #     other_gap = other_player["gap_history"]
+        #     for pos, gap in zip(other_history, other_gap):
+        #         if not gap:
+        #             intersect = do_points_intersect(pos, player_pos)
+        #             if intersect:
+        #                 player["alive"] = False
+        #                 break
+
+        # # check collision with screen edges
+        # if (
+        #     player_pos[0] < player_size
+        #     or player_pos[0] > cfg.screen_width - cfg.score_section_width - player_size
+        #     or player_pos[1] < player_size
+        #     or player_pos[1] > cfg.screen_height - player_size
+        # ):
+        #     player["alive"] = False
+        #     break
+
+    return players, game_state
 
 
 def update_player_direction(player):

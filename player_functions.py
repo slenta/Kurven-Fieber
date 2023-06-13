@@ -1,5 +1,6 @@
 import pygame
 import math
+import numpy as np
 from decimal import *
 import config as cfg
 from items import check_for_item_collision, power_down
@@ -12,7 +13,7 @@ from subfunctions import (
 )
 
 
-def move_player(player, players=None, items=None, screen=None):
+def move_player(player, game_state, players=None, items=None, screen=None):
     # check if player is alive
     if player["alive"]:
         # Get gap and line timer
@@ -57,23 +58,43 @@ def move_player(player, players=None, items=None, screen=None):
 
         # Update player position
         player["pos"] = (x, y)
+        player["game_state_pos"] = np.array(
+            [
+                np.arange(
+                    int(round(x, 0)) - int(player["size"] / 2),
+                    int(round(x, 0)) + int(player["size"] / 2),
+                ),
+                np.arange(
+                    int(round(y, 0)) - int(player["size"] / 2),
+                    int(round(y, 0)) + int(player["size"] / 2),
+                ),
+            ]
+        )
         # Update gap history
         player["gap_history"].insert(0, player["gap"])
         # update position history
         player["pos_history"].insert(0, (x, y))
+        # Truncate history if it exceeds the maximum length
+        # if len(player["pos_history"]) > cfg.player_max_history:
+        #     player["pos_history"] = player["pos_history"][-cfg.player_max_history :]
+        #     player["gap_history"] = player["gap_history"][-cfg.player_max_history :]
 
     return player
 
 
-def move_players(players, items, screen=None):
+def move_players(players, items, game_state, screen=None):
     for player in players:
         if player["alive"]:
             if player["dir"] == "stop":
                 continue
             else:
-                players = check_for_collisions(players)
-                players, items = check_for_item_collision(players, items)
-                player = move_player(player, players, items, screen)
+                players, game_state = check_for_collisions(players, game_state)
+                players, items, game_state = check_for_item_collision(
+                    players, items, game_state
+                )
+                player = move_player(player, game_state, players, items, screen)
+
+    return players, game_state
 
 
 def init_players(num_players, player_keys, players):
@@ -88,10 +109,23 @@ def init_players(num_players, player_keys, players):
     for i in range(cfg.num_ai_players, num_players):
         player_key = player_keys[i - cfg.num_ai_players]
         start_pos, start_dir = get_random_position()
+        game_state_pos = np.array(
+            [
+                np.arange(
+                    int(round(start_pos[0], 0)) - int(cfg.player_size / 2),
+                    int(round(start_pos[0], 0)) + int(cfg.player_size / 2),
+                ),
+                np.arange(
+                    int(round(start_pos[1], 0)) - int(cfg.player_size / 2),
+                    int(round(start_pos[1], 0)) + int(cfg.player_size / 2),
+                ),
+            ]
+        )
         start_gap, start_line = get_random_gap()
         gap = False
         player = {
             "pos": start_pos,
+            "game_state_pos": game_state_pos,
             "dir": start_dir,
             "angle": 0,
             "color": player_colors[i],
