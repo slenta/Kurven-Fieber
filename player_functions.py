@@ -27,9 +27,9 @@ def move_player(player, game_state, players=None):
         # update player direction and get player values
         if player["ai"] == True:
             player = update_ai_player_direction(player, game_state, players)
-            player["iteration"] += 1
         else:
             player = update_player_direction(player)
+
         x, y = player["pos"]
         dx, dy = player["dir"]
 
@@ -74,10 +74,6 @@ def move_player(player, game_state, players=None):
         player["gap_history"].insert(0, player["gap"])
         # update position history
         player["pos_history"].insert(0, (x, y))
-        # Truncate history if it exceeds the maximum length
-        # if len(player["pos_history"]) > cfg.player_max_history:
-        #     player["pos_history"] = player["pos_history"][-cfg.player_max_history :]
-        #     player["gap_history"] = player["gap_history"][-cfg.player_max_history :]
 
     return player
 

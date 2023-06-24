@@ -6,7 +6,7 @@ from subfunctions import do_points_intersect, get_random_position
 
 
 class item_class:
-    def __init__(self, screen, id):
+    def __init__(self, id, screen=None):
         self.screen = screen
         self.screen_width = cfg.screen_width
         self.screen_height = cfg.screen_height
@@ -63,14 +63,34 @@ class item_class:
         self.item["alive"] = True
         return game_state
 
+    def render_sim(self, game_state):
+        # Update game state
+        game_state[self.item_x, self.item_y] = np.where(
+            game_state[self.item_x, self.item_y] == 0,
+            self.id,
+            game_state[self.item_x, self.item_y],
+        )
+        self.item["alive"] = True
+        return game_state
+
     def unrender(self, game_state):
         pygame.draw.circle(self.screen, cfg.black, self.position, self.radius)
-        self.item["alive"] = False
         game_state[self.item_x, self.item_y] = np.where(
             game_state[self.item_x, self.item_y] == self.id,
             0,
             game_state[self.item_x, self.item_y],
         )
+        self.item["alive"] = False
+
+        return game_state
+
+    def unrender_sim(self, game_state):
+        game_state[self.item_x, self.item_y] = np.where(
+            game_state[self.item_x, self.item_y] == self.id,
+            0,
+            game_state[self.item_x, self.item_y],
+        )
+        self.item["alive"] = False
 
         return game_state
 
@@ -133,11 +153,14 @@ def power_down(item, item_timer, player):
 
 
 # Function to render items
-def render_items(screen, items, game_state):
+def render_items(items, game_state, screen=None):
     # Randomly choose one item
     item_id = random.randint(5, cfg.num_items + 5)
-    item_c = item_class(screen, item_id)
-    game_state = item_c.render(game_state)
+    item_c = item_class(item_id, screen)
+    if screen:
+        game_state = item_c.render(game_state)
+    else:
+        game_state = item_c.render_sim(game_state)
     items.append(item_c)
 
     return items, game_state
@@ -151,7 +174,10 @@ def item_collision(player, players, item, items, game_state):
     # Update players, items, game_state
     if collision:
         players = power_up(item.item, player, players)
-        game_state = item.unrender(game_state)
+        if not player["ai"]:
+            game_state = item.unrender(game_state)
+        else:
+            game_state = item.unrender_sim(game_state)
         items.remove(item)
 
     return players, items, game_state

@@ -13,8 +13,8 @@ class DQN(nn.Module):
         self.player_history_size = (
             512  # Number of previous player positions to consider
         )
-        self.player_embedding_size = 64  # Embedding size for player history
-        self.item_embedding_size = 64  # Embedding size for item list
+        self.section_embedding_size = 16  # Embedding size for player history
+        self.densities_embedding_size = 8  # Embedding size for item list
         self.screen_dim_size = 2  # Dimension size for screen dimensions
         self.hidden_size = 64  # LSTM hidden size
         self.num_fc_layers = cfg.num_layers  # Number fc layers
@@ -23,12 +23,12 @@ class DQN(nn.Module):
         self.num_items = 16  # Item size set, if less --> padding
 
         # Embedding layers
-        self.section_embedding = nn.Embedding(20, self.player_embedding_size)
-        self.density_embedding = nn.Embedding(1, self.item_embedding_size)
+        self.section_embedding = nn.Embedding(20, self.section_embedding_size)
+        self.density_embedding = nn.Embedding(1, self.densities_embedding_size)
 
         # LSTM layer
         self.lstm = nn.LSTM(
-            self.player_embedding_size,
+            self.section_embedding_size,
             self.hidden_size,
             self.num_lstm_layers,
             batch_first=True,
@@ -44,7 +44,7 @@ class DQN(nn.Module):
         #         64,
         #     )
         # )
-        self.fc_layers.append(nn.Linear(81794, 64))
+        self.fc_layers.append(nn.Linear(1474, 64))
         for _ in range(self.num_fc_layers - 2):
             self.fc_layers.append(nn.Linear(64, 64))
         self.fc_layers.append(nn.Linear(64, self.num_actions))
@@ -78,7 +78,7 @@ class DQN(nn.Module):
 class preprocessing:
     def __init__(self, player, game_state) -> None:
         self.game_state = game_state
-        self.num_sections = 20
+        self.num_sections = 100
         self.player = player
 
     def get_game_variables(self):

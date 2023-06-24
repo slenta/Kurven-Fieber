@@ -64,7 +64,6 @@ def init_ai_player(id, model, iteration):
         "model": model,
         "outcomes": torch.tensor([0]),
         "optimizer": optimizer,
-        "iteration": iteration,
         "pred_actions": torch.tensor(data=[]),
         "actions": torch.tensor(data=[], dtype=torch.int64),
     }
@@ -82,37 +81,40 @@ def update_ai_player_direction(player, game_state, players):
     q_values = model.forward(section, densities)
     pred_action = torch.argmax(q_values)
 
-    # change predicted actions to actual actions by epsilon or softmax exploration
-    action = epsilon_greedy_action(q_values)
+    if cfg.training:
+        # change predicted actions to actual actions by epsilon or softmax exploration
+        action = epsilon_greedy_action(q_values)
 
-    # Update pred_actions and actions
-    player["pred_actions"] = torch.cat(
-        [player["pred_actions"], q_values.unsqueeze(0)], dim=0
-    )
-    player["actions"] = torch.cat(
-        [player["actions"], action.clone().unsqueeze(0)],
-        dim=0,
-    )
+        # Update pred_actions and actions
+        player["pred_actions"] = torch.cat(
+            [player["pred_actions"], q_values.unsqueeze(0)], dim=0
+        )
+        player["actions"] = torch.cat(
+            [player["actions"], action.clone().unsqueeze(0)],
+            dim=0,
+        )
 
-    # update model
-    optimizer = player["optimizer"]
-    optimizer.zero_grad()
-    outcome = reward(player, players)
-    player["outcomes"] = torch.cat([player["outcomes"], outcome.unsqueeze(0)], dim=0)
+        # update model
+        optimizer = player["optimizer"]
+        optimizer.zero_grad()
+        outcome = reward(player, players)
+        player["outcomes"] = torch.cat(
+            [player["outcomes"], outcome.unsqueeze(0)], dim=0
+        )
 
-    loss = compute_loss(
-        player["outcomes"],
-        player["pred_actions"],
-        player["actions"],
-    )
+        loss = compute_loss(
+            player["outcomes"],
+            player["pred_actions"],
+            player["actions"],
+        )
 
-    # Backpropagation
-    loss.backward(retain_graph=True)
-    optimizer.step()
+        # Backpropagation
+        loss.backward(retain_graph=True)
+        optimizer.step()
 
-    # update player variables
-    player["model"] = model
-    player["optimizer"] = optimizer
+        # update player variables
+        player["model"] = model
+        player["optimizer"] = optimizer
 
     # Change direction depending on model output
     if pred_action == 0:

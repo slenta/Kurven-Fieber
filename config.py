@@ -37,6 +37,8 @@ num_lstm = None
 save_model_path = None
 num_ai_players = None
 resume_iter = None
+max_iter = None
+training = None
 
 pygame.init()
 
@@ -46,7 +48,7 @@ def set_args(arg_file=None):
     arg_parser.add_argument("--screen_width", type=int, default=940)
     arg_parser.add_argument("--screen_height", type=int, default=680)
     arg_parser.add_argument("--score_section_width", type=int, default=200)
-    arg_parser.add_argument("--speed", type=int, default=2)
+    arg_parser.add_argument("--speed", type=int, default=4)
     arg_parser.add_argument("--player_size", type=int, default=6)
     arg_parser.add_argument("--player_max_history", type=int, default=32)
     arg_parser.add_argument("--min_gap", type=int, default=10)
@@ -62,11 +64,13 @@ def set_args(arg_file=None):
     arg_parser.add_argument(
         "--save_model_path",
         type=str,
-        default="/Users/Simon/Desktop/Uni/Freizeit/AchtungDieKurve/model_states",
+        default="/home/simon/Desktop/Uni/Freizeit/Achtung_Kurve/model_states/",
     )
     arg_parser.add_argument("--num_ai_players", type=int, default=0)
     arg_parser.add_argument("--resume_iter", type=int, default=0)
+    arg_parser.add_argument("--max_iter", type=int, default=1)
     arg_parser.add_argument("--max_items", type=int, default=15)
+    arg_parser.add_argument("--training", action="store_true")
 
     args = arg_parser.parse_args()
 
@@ -97,7 +101,9 @@ def set_args(arg_file=None):
     global save_model_path
     global num_ai_players
     global resume_iter
+    global max_iter
     global max_items
+    global training
 
     screen_width = args.screen_width
     screen_height = args.screen_height
@@ -127,4 +133,6 @@ def set_args(arg_file=None):
     save_model_path = args.save_model_path
     num_ai_players = args.num_ai_players
     resume_iter = args.resume_iter
+    max_iter = args.max_iter
     max_items = args.max_items
+    training = args.training
