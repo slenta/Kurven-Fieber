@@ -84,6 +84,7 @@ def check_for_collisions(players, game_state):
                 & (game_state != player["id"] + 2),
                 as_tuple=True,
             )
+            coll_points = [cp.to(cfg.device) for cp in coll_points]
             player_pairs = torch.any(
                 (coll_points[0][:, torch.newaxis] == gs_pos[1])
                 & (coll_points[1][:, torch.newaxis] == gs_pos[0])
