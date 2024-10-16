@@ -95,9 +95,6 @@ dmypy.json
 # PyCharm
 .idea/
 
-# Local configuration files
-config.py
-
 # Logs
 *.log
 
