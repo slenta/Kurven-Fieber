@@ -60,6 +60,7 @@ ipython_config.py
 # Environments
 .env
 .venv
+curve-env/
 env/
 venv/
 ENV/

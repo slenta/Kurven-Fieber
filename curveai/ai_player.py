@@ -38,6 +38,7 @@ def init_ai_player(id, model, iteration):
             ),
         ]
     )
+    game_state_pos = torch.from_numpy(game_state_pos).to(cfg.device)
     gap = False
     player = {
         "pos": start_pos,
@@ -62,10 +63,10 @@ def init_ai_player(id, model, iteration):
         "right": 1,
         "ai": True,
         "model": model,
-        "outcomes": torch.tensor([0]),
+        "outcomes": torch.tensor([0]).to(cfg.device),
         "optimizer": optimizer,
-        "pred_actions": torch.tensor(data=[]),
-        "actions": torch.tensor(data=[], dtype=torch.int64),
+        "pred_actions": torch.tensor(data=[]).to(cfg.device),
+        "actions": torch.tensor(data=[], dtype=torch.int64).to(cfg.device),
     }
 
     return player
@@ -88,11 +89,11 @@ def update_ai_player_direction(player, game_state, players):
         # Update pred_actions and actions
         player["pred_actions"] = torch.cat(
             [player["pred_actions"], q_values.unsqueeze(0)], dim=0
-        )
+        ).to(cfg.device)
         player["actions"] = torch.cat(
             [player["actions"], action.clone().unsqueeze(0)],
             dim=0,
-        )
+        ).to(cfg.device)
 
         # update model
         optimizer = player["optimizer"]
@@ -100,7 +101,7 @@ def update_ai_player_direction(player, game_state, players):
         outcome = reward(player, players)
         player["outcomes"] = torch.cat(
             [player["outcomes"], outcome.unsqueeze(0)], dim=0
-        )
+        ).to(cfg.device)
 
         loss = compute_loss(
             player["outcomes"],

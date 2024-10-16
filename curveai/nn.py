@@ -58,14 +58,16 @@ class DQN(nn.Module):
             [cfg.play_screen_width, cfg.screen_height],
             dtype=torch.float16,
             requires_grad=True,
-        )
+        ).to(cfg.device)
 
         # Pass player history through LSTM
         # _, (h_n, _) = self.lstm(player_history.clone().detach())
         # h_n = h_n.squeeze(dim=0)
 
         # Concatenate LSTM output with item list and screen dimensions
-        x = torch.cat((sec_emb.flatten(), den_emb.flatten(), screen_dims), dim=0)
+        x = torch.cat((sec_emb.flatten(), den_emb.flatten(), screen_dims), dim=0).to(
+            cfg.device
+        )
 
         # Pass lstm output through fc layers
         for i in range(self.num_fc_layers - 1):
@@ -88,14 +90,14 @@ class preprocessing:
         section_height = cfg.screen_height // self.num_sections
 
         # Calculate section density
-        densities = np.zeros(self.num_sections)
-        curr_section = np.zeros((section_width, section_height))
+        densities = torch.zeros(self.num_sections, dtype=torch.float16)
+        curr_section = torch.zeros((section_width, section_height), dtype=torch.float16)
         for sec in range(self.num_sections):
             section = self.game_state[
                 sec * section_width : (sec + 1) * section_width,
                 sec * section_height : (sec + 1) * section_height,
-            ]
-            coll_points = np.where((section >= 1) & (section <= 8))
+            ].to(torch.float16)
+            coll_points = torch.where((section >= 1) & (section <= 8))
             sec_density = len(coll_points) / (section_width * section_height)
             densities[sec] = sec_density
 
@@ -107,12 +109,8 @@ class preprocessing:
                 curr_section = section
 
         # Convert to tensors
-        curr_section = torch.tensor(
-            curr_section, dtype=torch.float16, requires_grad=True
-        ).long()
-        densities = torch.tensor(
-            densities, dtype=torch.float16, requires_grad=True
-        ).long()
+        curr_section = curr_section.clone().detach().requires_grad_(True).long()
+        densities = densities.clone().detach().requires_grad_(True).long()
 
         return curr_section, densities
 
@@ -123,25 +121,27 @@ def reward(player, players):
     for play in players:
         if play != player:
             if play["alive"] == False:
-                others_rewards += 1
+                others_rewards += 30
 
     # Compute loss for staying alive
     alive = player["alive"]
     if alive == True:
         alive_reward = 1
     else:
-        alive_reward = -1
+        alive_reward = -200
 
     # Total loss
     reward = alive_reward + others_rewards
-    reward = torch.tensor(reward)
+    reward = torch.tensor(reward).to(cfg.device)
 
     return reward
 
 
 def compute_loss(rewards, pred_actions, actions):
     # Compute the cumulative rewards
-    cumulative_rewards = torch.cumsum(rewards.clone(), dim=0, dtype=torch.float)
+    cumulative_rewards = torch.cumsum(rewards.clone(), dim=0, dtype=torch.float).to(
+        cfg.device
+    )
 
     # Normalize the cumulative rewards
     normalized_rewards = (
@@ -150,10 +150,10 @@ def compute_loss(rewards, pred_actions, actions):
     normalized_rewards = normalized_rewards[1:]
 
     # Transform predicted actions
-    pred_actions = torch.softmax(pred_actions, dim=1)
+    pred_actions = torch.softmax(pred_actions, dim=1).to(cfg.device)
 
     # Compute the negative log probabilities of the predicted actions
-    log_probabilities = -torch.log(pred_actions)
+    log_probabilities = -torch.log(pred_actions).to(cfg.device)
 
     # Select the log probabilities corresponding to the actual actions taken
     selected_log_probabilities = log_probabilities.gather(
@@ -161,7 +161,7 @@ def compute_loss(rewards, pred_actions, actions):
     )
 
     # Compute the loss as the negative log probabilities weighted by the rewards
-    loss = -torch.mean(selected_log_probabilities * rewards)
+    loss = -torch.mean(selected_log_probabilities * rewards).to(cfg.device)
 
     return loss
 
@@ -170,15 +170,15 @@ def epsilon_greedy_action(q_values):
     epsilon = 0.2
     if random.random() < epsilon:
         # Explore: choose a random action
-        action = torch.tensor(random.choice(range(len(q_values))))
+        action = torch.tensor(random.choice(range(len(q_values)))).to(cfg.device)
     else:
         # Exploit: choose the action with the highest Q-value
-        action = torch.argmax(q_values)
+        action = torch.argmax(q_values).to(cfg.device)
     return action
 
 
 def softmax_action(q_values):
     temperature = 0.5
-    probabilities = torch.softmax(q_values / temperature, dim=0)
-    action = torch.multinomial(probabilities, 1).item()
+    probabilities = torch.softmax(q_values / temperature, dim=0).to(cfg.device)
+    action = torch.multinomial(probabilities, 1).item().to(cfg.device)
     return action

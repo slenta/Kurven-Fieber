@@ -57,7 +57,7 @@ def move_player(player, game_state, players=None):
 
         # Update player position
         player["pos"] = (x, y)
-        player["game_state_pos"] = np.array(
+        game_state_pos = np.array(
             [
                 np.arange(
                     int(round(x, 0)) - int(player["size"] / 2),
@@ -69,6 +69,7 @@ def move_player(player, game_state, players=None):
                 ),
             ]
         )
+        player["game_state_pos"] = torch.from_numpy(game_state_pos).to(cfg.device)
         # Update gap history
         player["gap_history"].insert(0, player["gap"])
         player["gap_history"] = player["gap_history"][: cfg.player_min_collision + 5]
@@ -118,6 +119,7 @@ def init_players(num_players, player_keys, players):
                 ),
             ]
         )
+        game_state_pos = torch.from_numpy(game_state_pos).to(cfg.device)
         start_gap, start_line = get_random_gap()
         gap = False
         player = {

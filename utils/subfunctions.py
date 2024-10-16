@@ -74,24 +74,26 @@ def check_for_collisions(players, game_state):
             continue
         # Alternative check using game_state variable
         gs_pos = player["game_state_pos"]
-        gs_stack = np.column_stack(gs_pos)
         player_pairs = False
 
         if not player["gap"]:
             # Select points from game stack that would lead to collision and compare to position
-            coll_points = np.nonzero(
-                (game_state >= 1) & (game_state <= 5) & (game_state != player["id"] + 2)
+            coll_points = torch.nonzero(
+                (game_state >= 1)
+                & (game_state <= 5)
+                & (game_state != player["id"] + 2),
+                as_tuple=True,
             )
-            player_pairs = np.any(
-                (coll_points[0][:, np.newaxis] == gs_pos[0])
-                & (coll_points[1][:, np.newaxis] == gs_pos[1])
+            player_pairs = torch.any(
+                (coll_points[0][:, torch.newaxis] == gs_pos[1])
+                & (coll_points[1][:, torch.newaxis] == gs_pos[0])
             )
 
         # Check if colliding with walls
-        wall_points = np.nonzero(game_state == -1)
-        wall_pairs = np.any(
-            (wall_points[0][:, np.newaxis] == gs_pos[0])
-            & (wall_points[1][:, np.newaxis] == gs_pos[1])
+        wall_points = torch.nonzero(game_state == -1, as_tuple=True)
+        wall_pairs = torch.any(
+            (wall_points[0][:, np.newaxis] == gs_pos[1])
+            & (wall_points[1][:, np.newaxis] == gs_pos[0])
         )
 
         # slow list solution
@@ -110,22 +112,19 @@ def check_for_collisions(players, game_state):
             player["alive"] = False
         else:
             # At first change to player id
-            game_state[gs_pos[0], gs_pos[1]] = player["id"] + 2
+            game_state[gs_pos[1], gs_pos[0]] = player["id"] + 2
 
             # After direct collision period with own head: change to 1
             if len(player["pos_history"]) >= cfg.player_min_collision + 3:
                 x, y = player["pos_history"][cfg.player_min_collision]
-                x_pos = (
-                    np.arange(
-                        int(round(x, 0)) - int(player["size"] / 2),
-                        int(round(x, 0)) + int(player["size"] / 2),
-                    ),
+                x_pos = torch.arange(
+                    int(round(x, 0)) - int(player["size"] / 2),
+                    int(round(x, 0)) + int(player["size"] / 2),
                 )
-                y_pos = (
-                    np.arange(
-                        int(round(y, 0)) - int(player["size"] / 2),
-                        int(round(y, 0)) + int(player["size"] / 2),
-                    ),
+
+                y_pos = torch.arange(
+                    int(round(y, 0)) - int(player["size"] / 2),
+                    int(round(y, 0)) + int(player["size"] / 2),
                 )
                 if all(
                     not player["gap_history"][i]
@@ -133,9 +132,9 @@ def check_for_collisions(players, game_state):
                         cfg.player_min_collision - 2, cfg.player_min_collision + 2
                     )
                 ):
-                    game_state[x_pos, y_pos] = 1
+                    game_state[y_pos, x_pos] = 1
                 else:
-                    game_state[x_pos, y_pos] = 0
+                    game_state[y_pos, x_pos] = 0
 
         # player_pos = player["pos"]
         # player_history = player["pos_history"]

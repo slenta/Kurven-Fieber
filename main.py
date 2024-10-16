@@ -16,7 +16,10 @@ torch.autograd.set_detect_anomaly(True)
 pygame.init()
 
 # Show screen and define number of players
-num_players, player_keys = show_menu_screen()
+if not cfg.training:
+    num_players, player_keys = show_menu_screen()
+else:
+    num_players = cfg.num_ai_players
 
 # Initialize win counts dictionary, game state
 win_counts = {i + 1: 0 for i in range(num_players)}

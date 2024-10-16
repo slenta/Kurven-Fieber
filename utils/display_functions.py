@@ -108,3 +108,31 @@ def display_winner(screen, win_counts):
             x=cfg.screen_width - cfg.score_section_width + 90,
             y=20 + player_id * 20,
         )
+
+
+def update_screen_with_game_state(game_state, screen):
+    # Define colors for different game state values
+    colors = {
+        -1: (0, 0, 0),  # Black for walls
+        0: (255, 255, 255),  # White for empty space
+        1: (255, 0, 0),  # Red for old player points
+        2: (0, 255, 0),  # Green for player 1
+        3: (0, 0, 255),  # Blue for player 2
+        4: (255, 255, 0),  # Yellow for player 3
+        5: (0, 255, 255),  # Cyan for player 4
+        # Add more colors if needed
+    }
+
+    # Iterate over each pixel in the game state
+    for y in range(game_state.shape[0]):
+        for x in range(game_state.shape[1]):
+            value = int(game_state[y, x].item())  # Convert tensor to integer
+            color = colors.get(value)
+            if value >= 6:
+                color = (255, 255, 0)
+            if not color:
+                print("no valid value:", value)
+            screen.set_at((x, y), color)
+
+    # Update the display
+    pygame.display.flip()

@@ -2,7 +2,11 @@ import pygame
 import os
 import torch
 import numpy as np
+import time
+import torch.nn.functional as f
+from tqdm import tqdm
 import utils.subfunctions as sf
+import utils.display_functions as df
 from utils.player_functions import get_random_position, get_random_gap
 from utils.player_functions import move_players, get_winner
 from utils.display_functions import (
@@ -34,6 +38,7 @@ def reset_game(players, win_counts, player_keys=None, screen=None):
                 ),
             ]
         )
+        game_state_pos = torch.from_numpy(game_state_pos).to(cfg.device)
         player["game_state_pos"] = game_state_pos
         player["speed"] = cfg.speed
         if player["ai"] == False:
@@ -118,6 +123,9 @@ def game_loop(players, player_keys, screen, win_counts, last_spawn_time):
         # move all players and check for collisions
         players, game_state = move_players(players, items, game_state)
 
+        # Update the screen with the current game state
+        # df.update_screen_with_game_state(game_state, screen)
+
         # check if any players are alive
         alive_players = [player for player in players if player["alive"]]
         if len(alive_players) <= 1:
@@ -199,8 +207,10 @@ def game_loop(players, player_keys, screen, win_counts, last_spawn_time):
 
 
 def init_game_state():
-    game_state = np.zeros(shape=(cfg.play_screen_width - 10, cfg.screen_height - 10))
-    game_state = np.pad(game_state, 5, constant_values=-1)
+    game_state = torch.zeros(
+        size=(cfg.screen_height - 10, cfg.play_screen_width - 10), dtype=torch.int64
+    )
+    game_state = f.pad(game_state, (5, 5, 5, 5), value=-1)
     return game_state
 
 
@@ -212,51 +222,63 @@ def simulation_game_loop(players, win_counts, last_spawn_time, iteration):
     game_state = init_game_state()
     steps = 0
 
-    while iteration < cfg.max_iter:
-        # Get current time in milliseconds
-        current_time = pygame.time.get_ticks()
+    # Start time for measuring iterations per second
+    start_time = time.time()
 
-        # Check if it's time to spawn a new item (every 10 seconds)
-        if current_time - last_spawn_time >= 1000:
-            if len(items) <= cfg.max_items:
-                items, game_state = render_items(items, game_state)
+    # Create a progress bar
+    with tqdm(total=cfg.max_iter, desc="Training Progress", unit="iter") as pbar:
+        while iteration < cfg.max_iter:
+            # Get current time in milliseconds
+            current_time = pygame.time.get_ticks()
 
-            # Update the last spawn time
-            last_spawn_time = current_time
+            # Check if it's time to spawn a new item (every 10 seconds)
+            if current_time - last_spawn_time >= 1000:
+                if len(items) <= cfg.max_items:
+                    items, game_state = render_items(items, game_state)
 
-        # move all players and check for collisions
-        players, game_state = move_players(players, items, game_state)
-        steps += 1
+                # Update the last spawn time
+                last_spawn_time = current_time
 
-        # check if any players are alive
-        alive_players = [player for player in players if player["alive"]]
-        if len(alive_players) <= 1:
-            # Set game over to true
-            game_over = True
+            # move all players and check for collisions
+            players, game_state = move_players(players, items, game_state)
+            steps += 1
 
-            # Stop all players when the game is over
-            for player in players:
-                player["dir"] = "stop"
+            # check if any players are alive
+            alive_players = [player for player in players if player["alive"]]
+            if len(alive_players) <= 1:
+                # Set game over to true
+                game_over = True
 
-            # Get winning player, update training iteration and reset game
-            if len(alive_players) == 1:
-                if winner == None:
-                    winner = get_winner(players, win_counts)
-                    iteration += 1
-                    print(iteration, steps, current_time)
-                    steps = 0
+                # Stop all players when the game is over
+                for player in players:
+                    player["dir"] = "stop"
 
-                    for player in players:
-                        for i in range(len(player["items"])):
+                # Get winning player, update training iteration and reset game
+                if len(alive_players) == 1:
+                    if winner == None:
+                        winner = get_winner(players, win_counts)
+                        iteration += 1
+                        # Calculate elapsed time and iterations per second
+                        elapsed_time = time.time() - start_time
+                        its_per_second = steps / elapsed_time if elapsed_time > 0 else 0
+
+                        # Update the progress bar and print the current iteration and its/s
+                        pbar.set_postfix(
+                            {"Iteration": iteration, "its/s": f"{its_per_second:.2f}"}
+                        )
+                        pbar.update(1)
+                        print(iteration, steps, current_time)
+                        steps = 0
+
+                        for player in players:
                             player = power_down(
-                                player["items"][i],
-                                player["item_timer"][i],
                                 player,
+                                all=True,
                             )
 
-                    winner, items, game_state = reset_game(players, win_counts)
+                        winner, items, game_state = reset_game(players, win_counts)
 
-        cfg.clock.tick(60)
+            cfg.clock.tick(60)
 
     # If max iteration is reached: Save nn state for all players
     for i in range(cfg.num_ai_players):

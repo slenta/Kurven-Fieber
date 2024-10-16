@@ -1,4 +1,5 @@
 import pygame
+import torch
 import random
 import numpy as np
 import config as cfg
@@ -19,11 +20,11 @@ class item_class:
             self.color = cfg.red
         self.position = self.get_position()
         self.item = self.init_item()
-        self.item_x = np.arange(
+        self.item_x = torch.arange(
             int(round(self.position[0], 0)) - int(self.radius),
             int(round(self.position[0], 0)) + int(self.radius + 1),
         )
-        self.item_y = np.arange(
+        self.item_y = torch.arange(
             int(round(self.position[1], 0)) - int(self.radius),
             int(round(self.position[1], 0)) + int(self.radius + 1),
         )
@@ -49,10 +50,10 @@ class item_class:
     # Function to render the intem
     def render(self, game_state):
         # Update game state
-        game_state[self.item_x, self.item_y] = np.where(
-            game_state[self.item_x, self.item_y] == 0,
+        game_state[self.item_y, self.item_x] = torch.where(
+            game_state[self.item_y, self.item_x] == 0,
             self.id,
-            game_state[self.item_x, self.item_y],
+            game_state[self.item_y, self.item_x],
         )
         pygame.draw.circle(self.screen, self.color, self.position, self.radius)
         # Render the letter surface
@@ -65,30 +66,30 @@ class item_class:
 
     def render_sim(self, game_state):
         # Update game state
-        game_state[self.item_x, self.item_y] = np.where(
-            game_state[self.item_x, self.item_y] == 0,
-            self.id,
-            game_state[self.item_x, self.item_y],
+        game_state[self.item_y, self.item_x] = torch.where(
+            game_state[self.item_y, self.item_x] == 0,
+            torch.tensor(self.id, dtype=game_state.dtype),
+            game_state[self.item_y, self.item_x],
         )
         self.item["alive"] = True
         return game_state
 
     def unrender(self, game_state):
         pygame.draw.circle(self.screen, cfg.black, self.position, self.radius)
-        game_state[self.item_x, self.item_y] = np.where(
-            game_state[self.item_x, self.item_y] == self.id,
+        game_state[self.item_y, self.item_x] = torch.where(
+            game_state[self.item_y, self.item_x] == self.id,
             0,
-            game_state[self.item_x, self.item_y],
+            game_state[self.item_y, self.item_x],
         )
         self.item["alive"] = False
 
         return game_state
 
     def unrender_sim(self, game_state):
-        game_state[self.item_x, self.item_y] = np.where(
-            game_state[self.item_x, self.item_y] == self.id,
+        game_state[self.item_y, self.item_x] = torch.where(
+            game_state[self.item_y, self.item_x] == self.id,
             0,
-            game_state[self.item_x, self.item_y],
+            game_state[self.item_y, self.item_x],
         )
         self.item["alive"] = False
 
@@ -132,23 +133,45 @@ def power_up(item, player, players):
     return players
 
 
-def power_down(item, item_timer, player):
-    id = item["id"]
-    player["items"].remove(item)
-    player["item_timer"].remove(item_timer)
-    if id == 6 or id == 8:
-        player["speed"] *= 2 / 3
-    elif id == 5 or id == 7:
-        player["speed"] *= 3 / 2
-    elif id == 9:
-        left = player["left"]
-        right = player["right"]
-        player["left"] = right
-        player["right"] = left
-    elif id == 10:
-        player["del_angle"] -= 5
-        if player["del_angle"] <= 2:
-            player["del_angle"] = 2
+def power_down(player, i=0, all=False):
+    if all:
+        for item, item_timer in zip(player["items"], player["item_timer"]):
+            print(item["id"])
+            id = item["id"]
+            player["items"].remove(item)
+            player["item_timer"].remove(item_timer)
+            if id == 6 or id == 8:
+                player["speed"] *= 2 / 3
+            elif id == 5 or id == 7:
+                player["speed"] *= 3 / 2
+            elif id == 9:
+                left = player["left"]
+                right = player["right"]
+                player["left"] = right
+                player["right"] = left
+            elif id == 10:
+                player["del_angle"] -= 5
+                if player["del_angle"] <= 2:
+                    player["del_angle"] = 2
+    else:
+        item = player["items"][i]
+        item_timer = player["item_timer"][i]
+        id = item["id"]
+        player["items"].remove(item)
+        player["item_timer"].remove(item_timer)
+        if id == 6 or id == 8:
+            player["speed"] *= 2 / 3
+        elif id == 5 or id == 7:
+            player["speed"] *= 3 / 2
+        elif id == 9:
+            left = player["left"]
+            right = player["right"]
+            player["left"] = right
+            player["right"] = left
+        elif id == 10:
+            player["del_angle"] -= 5
+            if player["del_angle"] <= 2:
+                player["del_angle"] = 2
     return player
 
 
